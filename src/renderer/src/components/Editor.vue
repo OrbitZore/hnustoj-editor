@@ -23,7 +23,7 @@ onMounted(() => {
     return
   }
   editor = monaco.editor.create(codeEditBox.value, {
-    value: editorInitText,
+    value: editorInitText?.value,
     language: props.language,
     readOnly: props.readOnly,
     theme: props.theme,
@@ -63,6 +63,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   editor.dispose()
 })
+
+const reset = () => {
+  if (editorInitText?.value) {
+    editor.setValue(editorInitText?.value)
+  }
+}
+
+defineExpose({ reset })
 </script>
 <style lang="css" scoped>
 .codeEditBox,

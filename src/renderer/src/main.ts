@@ -1,11 +1,11 @@
 import './assets/main.css'
 
-import { createApp, reactive } from 'vue'
+import { createApp, reactive, ref } from 'vue'
 import App from './App.vue'
 
 const app = createApp(App)
 import * as appkey from './AppKey'
-app.provide(appkey.editorInitText, '')
+app.provide(appkey.editorInitText, ref(''))
 app.provide(
   appkey.editorPositon,
   reactive({
