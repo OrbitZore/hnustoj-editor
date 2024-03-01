@@ -1,7 +1,7 @@
-import { PropType, Ref } from 'vue'
+import { Ref } from 'vue'
 
-export type stateType = {
-  text: string
+export interface stateType {
+  text: Ref<string> | string
   click: () => void
 }
 
@@ -9,11 +9,11 @@ export type statesType = [stateType, symbol][]
 
 export const statusBarProps = {
   leftText: {
-    type: String as PropType<string>,
+    type: String,
     default: 'Left'
   },
   rightText: {
-    type: String as PropType<string>,
+    type: String,
     default: 'Right'
   }
 }

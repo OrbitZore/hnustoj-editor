@@ -30,7 +30,12 @@ export default {
 
 <style scoped>
 .status {
-  padding: 5px 10px;
+  font-size: 14px;
+  display: inline;
+  /* padding: 5px 10px; */
   cursor: pointer;
+}
+.status:hover {
+  background-color: #007bff;
 }
 </style>

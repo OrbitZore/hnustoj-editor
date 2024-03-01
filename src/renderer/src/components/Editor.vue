@@ -1,17 +1,21 @@
 <template>
   <div ref="codeEditorWrapper" class="codeEditorWrapper">
-    <div ref="codeEditBox" class="codeEditBox" :class="hightChange && 'codeEditBox1'" />
+    <div ref="codeEditBox" class="codeEditBox codeEditBox1" />
   </div>
 </template>
 <script lang="ts" setup>
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, inject } from 'vue'
 import * as monaco from 'monaco-editor'
+import * as appkey from '../AppKey'
 // import { languages as cppLanguage } from 'monaco-editor/esm/vs/basic-languages/cpp/cpp'
 import { editorProps } from './EditorType'
 const props = defineProps(editorProps)
-const emit = defineEmits(['update:modelValue', 'change', 'editor-mounted'])
+const emit = defineEmits(['change', 'editor-mounted', 'update:position'])
 const codeEditBox = ref<HTMLInputElement | null>()
 const codeEditorWrapper = ref<HTMLInputElement | null>()
+
+const editorInitText = inject(appkey.editorInitText)
+const position = inject(appkey.editorPositon)
 let editor: monaco.editor.IStandaloneCodeEditor
 
 onMounted(() => {
@@ -19,33 +23,18 @@ onMounted(() => {
     return
   }
   editor = monaco.editor.create(codeEditBox.value, {
-    value: props.modelValue,
+    value: editorInitText,
     language: props.language,
     readOnly: props.readOnly,
     theme: props.theme,
     ...props.options
   })
-
-  editor.onDidChangeModelContent(() => {
-    const value = editor.getValue() // 给父组件实时返回最新文本
-    emit('update:modelValue', value)
-    emit('change', value)
-  })
   editor.onDidChangeCursorPosition((e) => {
-    e.position.lineNumber
-    e.position.column
-  })
-  watch(
-    () => props.modelValue,
-    (newValue) => {
-      if (editor) {
-        const value = editor.getValue()
-        if (newValue !== value) {
-          editor.setValue(newValue)
-        }
-      }
+    if (position) {
+      position.lineNumber = e.position.lineNumber
+      position.column = e.position.column
     }
-  )
+  })
   watch(
     () => props.options,
     (newValue) => {
@@ -61,7 +50,6 @@ onMounted(() => {
     },
     { deep: true }
   )
-
   watch(
     () => props.language,
     (newValue) => {
@@ -78,8 +66,8 @@ onBeforeUnmount(() => {
 <style lang="css" scoped>
 .codeEditBox,
 .codeEditorWrapper {
-  height: 100%;
-  width: auto;
+  width: 50vw;
+  height: calc(100vh - 20px);
 }
 .monaco-editor {
 }

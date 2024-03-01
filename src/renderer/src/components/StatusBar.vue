@@ -1,6 +1,7 @@
 <template>
   <div class="status-bar">
     <div class="left-status">
+      {{ props.leftText }}
       <StatusBarElement
         v-for="leftState in leftStates"
         :key="leftState[1]"
@@ -12,60 +13,49 @@
       <StatusBarElement
         v-for="rightState in rightStates"
         :key="rightState[1]"
-        :text="rightState[0].text.value"
+        :text="rightState[0].text"
         @click="rightState[0].click"
       />
+      {{ props.rightText }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { statusBarProps, stateType, statesType } from './StatusBarType'
 import StatusBarElement from './StatusBarElement.vue'
+import { reactive } from 'vue'
 const props = defineProps(statusBarProps)
-  expose: ['leftRegist', 'rightRegist'],
-  setup() {},
-  data(): {
-    leftStates: statesType
-    rightStates: statesType
-  } {
-    return {
-      leftStates: [],
-      rightStates: []
-    }
-  },
-  methods: {
-    leftRegist(status: stateType) {
-      console.log(status.text)
-      this.leftStates.push([status, Symbol()])
-    },
-    rightRegist(status: stateType) {
-      this.rightStates.push([status, Symbol()])
-    }
-  }
+const leftStates = reactive<statesType>([])
+const rightStates = reactive<statesType>([])
+const leftRegist = function (status: stateType) {
+  const sym = Symbol()
+  leftStates.push([reactive(status), Symbol()])
+  return sym
 }
+const rightRegist = function (status: stateType) {
+  const sym = Symbol()
+  rightStates.push([reactive(status), Symbol()])
+  return sym
+}
+defineExpose({ leftRegist, rightRegist })
 </script>
 
 <style scoped>
 .status-bar {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 40px;
+  height: 20px;
   background-color: #f0f0f0;
   padding: 0 10px;
 }
 
 .left-status,
 .right-status {
-  padding: 5px 10px;
+  font-size: 14px;
+  /* padding: 5px 10px; */
   cursor: pointer;
-}
-
-.left-status.active,
-.right-status.active {
-  background-color: #007bff;
-  color: #fff;
 }
 </style>

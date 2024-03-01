@@ -24,17 +24,12 @@ export const editorProps = {
     type: String as PropType<string>,
     default: null
   },
-  hightChange: {
-    type: Boolean,
-    default: false
-  },
-  width: {
-    type: [String, Number] as PropType<string | number>,
-    default: '100%'
-  },
-  height: {
-    type: [String, Number] as PropType<string | number>,
-    default: '100%'
+  position: {
+    type: Object as PropType<{ line: number; column: number }>,
+    default: {
+      line: 0,
+      column: 0
+    }
   },
   language: {
     type: String as PropType<string>,
