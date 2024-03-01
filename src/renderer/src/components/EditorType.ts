@@ -24,13 +24,6 @@ export const editorProps = {
     type: String as PropType<string>,
     default: null
   },
-  position: {
-    type: Object as PropType<{ line: number; column: number }>,
-    default: {
-      line: 0,
-      column: 0
-    }
-  },
   language: {
     type: String as PropType<string>,
     default: 'cpp'

@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, onMounted, provide, reactive, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import * as appkey from './AppKey'
 import Editor from './components/Editor.vue'
 import StatusBar from './components/StatusBar.vue'

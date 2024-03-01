@@ -10,7 +10,7 @@ import * as appkey from '../AppKey'
 // import { languages as cppLanguage } from 'monaco-editor/esm/vs/basic-languages/cpp/cpp'
 import { editorProps } from './EditorType'
 const props = defineProps(editorProps)
-const emit = defineEmits(['change', 'editor-mounted', 'update:position'])
+const emit = defineEmits(['change', 'editor-mounted'])
 const codeEditBox = ref<HTMLInputElement | null>()
 const codeEditorWrapper = ref<HTMLInputElement | null>()
 
@@ -31,8 +31,9 @@ onMounted(() => {
   })
   editor.onDidChangeCursorPosition((e) => {
     if (position) {
-      position.lineNumber = e.position.lineNumber
-      position.column = e.position.column
+      const { lineNumber, column } = e.position
+      position.lineNumber = lineNumber
+      position.column = column
     }
   })
   watch(
