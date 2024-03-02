@@ -1,7 +1,5 @@
 <template>
-  <div ref="codeEditorWrapper" class="codeEditorWrapper">
-    <div ref="codeEditBox" class="codeEditBox codeEditBox1" />
-  </div>
+  <div ref="codeEditBox" class="codeEditBox codeEditBox1" />
 </template>
 <script lang="ts" setup>
 import { onMounted, onBeforeUnmount, ref, watch, inject } from 'vue'
@@ -12,7 +10,6 @@ import { editorProps } from './EditorType'
 const props = defineProps(editorProps)
 const emit = defineEmits(['change', 'editor-mounted'])
 const codeEditBox = ref<HTMLInputElement | null>()
-const codeEditorWrapper = ref<HTMLInputElement | null>()
 
 const editorInitText = inject(appkey.editorInitText)
 const position = inject(appkey.editorPositon)
@@ -73,8 +70,7 @@ const reset = () => {
 defineExpose({ reset })
 </script>
 <style lang="css" scoped>
-.codeEditBox,
-.codeEditorWrapper {
+.codeEditBox {
   width: 50vw;
   height: calc(100vh - 20px);
 }

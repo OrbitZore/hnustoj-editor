@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import lspClient from './lspclient'
 
 function createWindow(): void {
   // Create the browser window.
@@ -35,6 +36,8 @@ function createWindow(): void {
   }
 }
 
+const clangd = new lspClient('clangd')
+clangd.send('initialize', {})
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -51,6 +54,16 @@ app.whenReady().then(() => {
 
   // IPC test
   ipcMain.on('ping', () => console.log('pong'))
+  ipcMain.on(
+    'rpcCall',
+    (_event, channel: 'C++' | 'Python' | 'Java', method: string, obj: object) => {
+      console.info(channel, method, obj)
+      if (channel == 'C++') {
+        clangd.send(method, obj)
+      }
+      return
+    }
+  )
 
   createWindow()
 
