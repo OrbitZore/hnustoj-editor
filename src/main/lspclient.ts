@@ -54,9 +54,11 @@ export default class lspClient {
         console.log(`${method} timed out after ${ms} ms`)
         reject()
       }, ms)
-      this.waitmap[id] = (args) => {
-        clearTimeout(promiseTimeout)
-        resolve(args)
+      if (id) {
+        this.waitmap[id] = (args) => {
+          clearTimeout(promiseTimeout)
+          resolve(args)
+        }
       }
     })
   }
