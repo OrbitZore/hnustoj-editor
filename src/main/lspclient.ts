@@ -49,6 +49,16 @@ export default class lspClient {
     this.process.stdin?.write(header + json.length + '\r\n\r\n' + json, () => {
       console.log('write success')
     })
+    return await new Promise((resolve, reject) => {
+      const promiseTimeout = setTimeout(function () {
+        console.log(`${method} timed out after ${ms} ms`)
+        reject()
+      }, ms)
+      this.waitmap[id] = (args) => {
+        clearTimeout(promiseTimeout)
+        resolve(args)
+      }
+    })
   }
   public async request(method: string, obj: object) {
     return await this.send(method, obj, ++this.id)
