@@ -5,8 +5,12 @@
 import { onMounted, onBeforeUnmount, ref, watch, inject } from 'vue'
 import * as monaco from 'monaco-editor'
 import * as appkey from '../AppKey'
-// import { languages as cppLanguage } from 'monaco-editor/esm/vs/basic-languages/cpp/cpp'
+import * as textDocument from 'vscode-languageserver-textdocument'
 import { editorProps } from './EditorType'
+import createDebounce from '@renderer/utils/debounce'
+import * as lsp from 'vscode-languageserver-protocol'
+import { IpcRendererEvent } from 'electron/renderer'
+
 const props = defineProps(editorProps)
 const emit = defineEmits(['change', 'editor-mounted'])
 const codeEditBox = ref<HTMLInputElement | null>()
@@ -26,6 +30,33 @@ onMounted(() => {
     theme: props.theme,
     ...props.options
   })
+  window.api.lsp.reload('cpp', editorInitText?.value || '')
+  editor.onDidChangeModelContent(
+    createDebounce(async () => {
+      await window.api.lsp.change(editor.getValue())
+    }, 1000)
+  )
+  window.electron.ipcRenderer.on(
+    'PublishDiagnostics',
+    (_event: IpcRendererEvent, diagnostics: lsp.Diagnostic[]) => {
+      const model = editor.getModel()
+      const c = diagnostics.map((diagnostic: lsp.Diagnostic): monaco.editor.IMarkerData => {
+        diagnostic.range
+        return {
+          severity: 1 << (4 - (diagnostic.severity || 4)),
+          message: diagnostic.message,
+          startLineNumber: diagnostic.range.start.line,
+          startColumn: diagnostic.range.start.character,
+          endLineNumber: diagnostic.range.end.line,
+          endColumn: diagnostic.range.end.character
+        }
+      })
+      console.log(c)
+      if (model) {
+        monaco.editor.setModelMarkers(model, 'clangd', c)
+      }
+    }
+  )
   editor.onDidChangeCursorPosition((e) => {
     if (position) {
       const { lineNumber, column } = e.position
@@ -74,6 +105,7 @@ defineExpose({ reset })
   width: 50vw;
   height: calc(100vh - 20px);
 }
+
 .monaco-editor {
 }
 </style>

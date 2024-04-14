@@ -30,6 +30,7 @@
   "compounds": [
     {
       "name": "Debug All",
+      "preLaunchTask": "cleanLog",
       "configurations": ["Debug Main Process", "Debug Renderer Process"],
       "presentation": {
         "order": 1

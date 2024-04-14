@@ -1,71 +1,65 @@
-import { spawn, ChildProcess } from 'child_process'
-const header = 'Content-Length: '
-const ms = 5000
-export default class lspClient {
-  process: ChildProcess
-  id = 0
-  waitmap = {}
-  buffer = ''
-  constructor(cmd: string, args: string[] = []) {
-    console.log('LSP Client created:', cmd, args)
-    this.process = spawn(cmd, args)
-    this.process.on('error', (err) => {
-      console.log('LSP Client error:', err)
-      this.process.kill()
-      this.id = 0
-      this.waitmap = {}
-      this.buffer = ''
-      this.process = spawn(cmd, args)
-    })
-    this.process.stdout?.on('data', (data) => {
-      this.buffer += data.toString()
-      console.log('check' + this.buffer)
-      //regex match
-      const match = this.buffer.match(/^Content-Length: (\d+)\r\n\r\n/)
-      if (match === null) {
-        if (this.buffer.length > header.length) this.buffer = ''
-        return
-      }
-      const len = parseInt(match[1])
-      console.log('len' + len)
-      if (this.buffer.length >= match.length + len) {
-        const result = JSON.parse(this.buffer.slice(match[0].length, match[0].length + len))
-        console.info(result)
-        if ('id' in result && this.waitmap[result['id']] !== undefined) {
-          this.waitmap[result['id']](result)
-        }
-        this.buffer = this.buffer.slice(match[0].length + len)
-      }
-    })
+import { LanguageClient, clangdLanguageServer } from '../lib/LanguageServer'
+import * as lsp from 'vscode-languageserver-protocol'
+import { editor } from 'monaco-editor'
+import { logMain as log } from '../lib/log'
+import { IpcMainInvokeEvent, ipcMain } from 'electron'
+import * as tmp from 'tmp'
+import { remove as remove_ } from 'fs-extra'
+const remove = promisify(remove_)
+import { promisify } from 'util'
+import { open } from 'fs/promises'
+export type LanguageSupportedKey = 'cpp'
+const lspClientLog = log.scope('lsp')
+class LSPClient {
+  lang?: LanguageSupportedKey
+  filePath?: string
+  languageClient?: LanguageClient
+  sender?: Electron.WebContents
+  dispose() {
+    this.languageClient?.dispose()
+    this.languageClient = undefined
+    if (this.filePath) {
+      remove(this.filePath)
+    }
+    this.filePath = undefined
   }
-  private async send(method: string, obj: object, id: number | undefined = undefined) {
-    const json = JSON.stringify({
-      jsonrpc: '2.0',
-      id,
-      method,
-      params: obj
+  async reload(_event: IpcMainInvokeEvent, lang: LanguageSupportedKey, text: string) {
+    this.sender = _event.sender
+    switch (lang) {
+      case 'cpp':
+        this.dispose()
+        this.filePath = await promisify(tmp.file)()
+        this.languageClient = clangdLanguageServer(
+          this.filePath,
+          this.onPublishDiagnostics.bind(this)
+        )
+        break
+    }
+    this.lang = lang
+    this.languageClient.onError((error) => {
+      lspClientLog.error('error!', error)
     })
-    console.info('send:', json)
-    this.process.stdin?.write(header + json.length + '\r\n\r\n' + json, () => {
-      console.log('write success')
-    })
-    return await new Promise((resolve, reject) => {
-      const promiseTimeout = setTimeout(function () {
-        console.log(`${method} timed out after ${ms} ms`)
-        reject()
-      }, ms)
-      if (id) {
-        this.waitmap[id] = (args) => {
-          clearTimeout(promiseTimeout)
-          resolve(args)
-        }
-      }
-    })
+    await this.languageClient.trace(lsp.Trace.Verbose, lspClientLog)
+    this.languageClient.listen()
+    await this.languageClient.initialize()
+    await this.languageClient.initialized()
+    await this.languageClient.open(lang, text)
   }
-  public async request(method: string, obj: object) {
-    return await this.send(method, obj, ++this.id)
+  async onChange(_event: IpcMainInvokeEvent, text: string) {
+    if (this.filePath) {
+      const fd = await open(this.filePath, 'w')
+      await fd.write(text, undefined, 'utf8')
+      await fd.close()
+    }
+    await this.languageClient?.didChange(text)
   }
-  public async notification(method: string, obj: object) {
-    return await this.send(method, obj)
+  onPublishDiagnostics(publishDiagnostics: lsp.PublishDiagnosticsParams) {
+    if (this.sender && publishDiagnostics.uri === 'file://' + this.filePath) {
+      this.sender.send('PublishDiagnostics', publishDiagnostics.diagnostics)
+    }
   }
 }
+const lsc = new LSPClient()
+ipcMain.handle('lsp.change', lsc.onChange.bind(lsc))
+ipcMain.handle('lsp.reload', lsc.reload.bind(lsc))
+export default lsc

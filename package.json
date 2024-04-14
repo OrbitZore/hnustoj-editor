@@ -13,6 +13,7 @@
     "type": "git",
     "url": "git+https://github.com/OrbitZore/hnustoj-editor.git"
   },
+  "type": "module",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts,.vue --fix",
@@ -31,8 +32,13 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.0",
     "@electron-toolkit/utils": "^3.0.0",
+    "@types/tmp": "^0.2.6",
+    "electron-log": "^5.1.2",
     "electron-updater": "^6.1.7",
-    "monaco-editor": "^0.46.0"
+    "monaco-editor": "^0.46.0",
+    "tmp": "^0.2.3",
+    "vscode-languageserver-protocol": "^3.17.5",
+    "vscode-languageserver-textdocument": "^1.0.11"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^1.0.2",
