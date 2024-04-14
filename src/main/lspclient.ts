@@ -1,7 +1,7 @@
 import { LanguageClient, clangdLanguageServer } from '../lib/LanguageServer'
 import * as lsp from 'vscode-languageserver-protocol'
-import { editor } from 'monaco-editor'
-import { logMain as log } from '../lib/log'
+import type * as monaco from 'monaco-editor'
+import log from 'electron-log/main.js'
 import { IpcMainInvokeEvent, ipcMain } from 'electron'
 import * as tmp from 'tmp'
 import { remove as remove_ } from 'fs-extra'
@@ -28,7 +28,7 @@ class LSPClient {
     switch (lang) {
       case 'cpp':
         this.dispose()
-        this.filePath = await promisify(tmp.file)()
+        this.filePath = (await promisify(tmp.file)()) + '.cpp'
         this.languageClient = clangdLanguageServer(
           this.filePath,
           this.onPublishDiagnostics.bind(this)
@@ -41,25 +41,48 @@ class LSPClient {
     })
     await this.languageClient.trace(lsp.Trace.Verbose, lspClientLog)
     this.languageClient.listen()
-    await this.languageClient.initialize()
+    const ret = await this.languageClient.initialize()
     await this.languageClient.initialized()
     await this.languageClient.open(lang, text)
+    return ret
   }
-  async onChange(_event: IpcMainInvokeEvent, text: string) {
+  async save(_event: IpcMainInvokeEvent, text: string) {
     if (this.filePath) {
       const fd = await open(this.filePath, 'w')
       await fd.write(text, undefined, 'utf8')
       await fd.close()
     }
-    await this.languageClient?.didChange(text)
+  }
+  async onChange(_event: IpcMainInvokeEvent, changeEvent: monaco.editor.IModelContentChangedEvent) {
+    await this.languageClient?.didChange(changeEvent)
   }
   onPublishDiagnostics(publishDiagnostics: lsp.PublishDiagnosticsParams) {
     if (this.sender && publishDiagnostics.uri === 'file://' + this.filePath) {
       this.sender.send('PublishDiagnostics', publishDiagnostics.diagnostics)
     }
   }
+  async requestCompletion(
+    _event: IpcMainInvokeEvent,
+    versionId: number,
+    position: monaco.Position,
+    triggerKind: number,
+    triggerCharacter?: string
+  ): Promise<monaco.languages.CompletionList> {
+    return (
+      (await this.languageClient?.requestCompletion(
+        versionId,
+        position,
+        triggerKind,
+        triggerCharacter
+      )) || {
+        suggestions: []
+      }
+    )
+  }
 }
 const lsc = new LSPClient()
 ipcMain.handle('lsp.change', lsc.onChange.bind(lsc))
 ipcMain.handle('lsp.reload', lsc.reload.bind(lsc))
+ipcMain.handle('lsp.save', lsc.save.bind(lsc))
+ipcMain.handle('lsp.requestCompletion', lsc.requestCompletion.bind(lsc))
 export default lsc

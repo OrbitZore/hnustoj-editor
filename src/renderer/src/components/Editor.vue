@@ -5,12 +5,11 @@
 import { onMounted, onBeforeUnmount, ref, watch, inject } from 'vue'
 import * as monaco from 'monaco-editor'
 import * as appkey from '../AppKey'
-import * as textDocument from 'vscode-languageserver-textdocument'
 import { editorProps } from './EditorType'
 import createDebounce from '@renderer/utils/debounce'
 import * as lsp from 'vscode-languageserver-protocol'
 import { IpcRendererEvent } from 'electron/renderer'
-
+import Queue from 'queue'
 const props = defineProps(editorProps)
 const emit = defineEmits(['change', 'editor-mounted'])
 const codeEditBox = ref<HTMLInputElement | null>()
@@ -19,7 +18,7 @@ const editorInitText = inject(appkey.editorInitText)
 const position = inject(appkey.editorPositon)
 let editor: monaco.editor.IStandaloneCodeEditor
 
-onMounted(() => {
+onMounted(async () => {
   if (!codeEditBox.value) {
     return
   }
@@ -28,14 +27,29 @@ onMounted(() => {
     language: props.language,
     readOnly: props.readOnly,
     theme: props.theme,
+    tabSize: 2,
     ...props.options
   })
-  window.api.lsp.reload('cpp', editorInitText?.value || '')
-  editor.onDidChangeModelContent(
-    createDebounce(async () => {
-      await window.api.lsp.change(editor.getValue())
-    }, 1000)
+  const initResult = await window.api.lsp.reload('cpp', editorInitText?.value || '')
+  const changeQueue = new Queue({ concurrency: 1, autostart: true })
+  editor.onDidChangeModelContent((event: monaco.editor.IModelContentChangedEvent) =>
+    changeQueue.push(() => window.api.lsp.change(event))
   )
+  monaco.languages.registerCompletionItemProvider('cpp', {
+    triggerCharacters: initResult.capabilities.completionProvider?.triggerCharacters,
+    provideCompletionItems: async function (
+      model: monaco.editor.ITextModel,
+      position: monaco.Position,
+      context: monaco.languages.CompletionContext
+    ) {
+      return window.api.lsp.requestCompletion(
+        model.getVersionId(),
+        position,
+        context.triggerKind,
+        context.triggerCharacter || model.getWordUntilPosition(position).word
+      )
+    }
+  })
   window.electron.ipcRenderer.on(
     'PublishDiagnostics',
     (_event: IpcRendererEvent, diagnostics: lsp.Diagnostic[]) => {
@@ -45,13 +59,12 @@ onMounted(() => {
         return {
           severity: 1 << (4 - (diagnostic.severity || 4)),
           message: diagnostic.message,
-          startLineNumber: diagnostic.range.start.line,
-          startColumn: diagnostic.range.start.character,
-          endLineNumber: diagnostic.range.end.line,
-          endColumn: diagnostic.range.end.character
+          startLineNumber: diagnostic.range.start.line + 1,
+          startColumn: diagnostic.range.start.character + 1,
+          endLineNumber: diagnostic.range.end.line + 1,
+          endColumn: diagnostic.range.end.character + 1
         }
       })
-      console.log(c)
       if (model) {
         monaco.editor.setModelMarkers(model, 'clangd', c)
       }

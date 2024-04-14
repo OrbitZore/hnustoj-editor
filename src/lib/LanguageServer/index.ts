@@ -1,6 +1,6 @@
 import * as lsp from 'vscode-languageserver-protocol'
 import StdioLS from './ls/StdioLS'
-import { editor } from 'monaco-editor'
+import type * as monaco from 'monaco-editor'
 import path from 'path'
 
 export interface LanguageClient extends lsp.ProtocolConnection {
@@ -9,9 +9,49 @@ export interface LanguageClient extends lsp.ProtocolConnection {
   initialize(): Promise<lsp.InitializeResult<unknown>>
   open(languageId: string, text: string): Promise<void>
   initialized(): Promise<void>
-  didChange(text: string): Promise<void>
+  didChange(changes: monaco.editor.IModelContentChangedEvent): Promise<void>
+  requestCompletion(
+    versionId: number,
+    position: monaco.Position,
+    triggerKind: number,
+    triggerCharacter?: string
+  ): Promise<monaco.languages.CompletionList>
 }
-
+const LSPCompletionItemKindToMonaco = {
+  1: 18, // const Text: 1;
+  2: 0, // const Method: 2;
+  3: 1, // const Function: 3;
+  4: 2, // const Constructor: 4;
+  5: 3, // const Field: 5;
+  6: 4, // const Variable: 6;
+  7: 5, // const Class: 7;
+  8: 7, // const Interface: 8;
+  9: 8, // const Module: 9;
+  10: 9, // const Property: 10;
+  11: 12, // const Unit: 11;
+  12: 13, // const Value: 12;
+  13: 15, // const Enum: 13;
+  14: 17, // const Keyword: 14;
+  15: 7,
+  16: 19, // const Color: 16;
+  17: 20, // const File: 17;
+  18: 21, // const Reference: 18;
+  19: 23, // const Folder: 19;
+  20: 16, // const EnumMember: 20;
+  21: 14, // const Constant: 21;
+  22: 6, // const Struct: 22;
+  23: 10, // const Event: 23;
+  24: 11, // const Operator: 24;
+  25: 24 // const TypeParameter: 25;
+}
+const LSPRangeToMonaco = (range: lsp.Range): monaco.IRange => {
+  return {
+    startLineNumber: range.start.line + 1,
+    startColumn: range.start.character + 1,
+    endLineNumber: range.end.line + 1,
+    endColumn: range.end.character + 1
+  }
+}
 export function createLanguageClient(
   connection: lsp.ProtocolConnection,
   filePath: string,
@@ -38,7 +78,8 @@ export function createLanguageClient(
             completion: {
               completionItem: {
                 deprecatedSupport: true,
-                snippetSupport: true
+                snippetSupport: true,
+                insertReplaceSupport: true
               },
               completionItemKind: {
                 valueSet: [
@@ -46,7 +87,7 @@ export function createLanguageClient(
                   23, 24, 25
                 ]
               },
-              editsNearCursor: true
+              contextSupport: true
             },
             documentSymbol: {
               hierarchicalDocumentSymbolSupport: true
@@ -93,7 +134,7 @@ export function createLanguageClient(
         processId: null,
         rootPath: null,
         rootUri
-      })
+      } as unknown as lsp.InitializeParams)
     },
     initialized() {
       return connection.sendNotification(lsp.InitializedNotification.type, {})
@@ -108,18 +149,69 @@ export function createLanguageClient(
         }
       })
     },
-    didChange(text: string) {
+    didChange(changeEvent: monaco.editor.IModelContentChangedEvent) {
       return connection.sendNotification(lsp.DidChangeTextDocumentNotification.type, {
         textDocument: {
           uri: this.uri,
-          version: this.versionId++
+          version: changeEvent.versionId
         },
-        contentChanges: [
-          {
-            text
+        contentChanges: changeEvent.changes.map((change) => {
+          return {
+            range: lsp.Range.create(
+              change.range.startLineNumber - 1,
+              change.range.startColumn - 1,
+              change.range.endLineNumber - 1,
+              change.range.endColumn - 1
+            ),
+            text: change.text
           }
-        ]
+        })
       })
+    },
+    async requestCompletion(
+      versionId: number,
+      position: monaco.Position,
+      triggerKind: number,
+      triggerCharacter: string
+    ) {
+      let result =
+        (await connection.sendRequest(lsp.CompletionRequest.type, {
+          textDocument: {
+            uri: this.uri,
+            version: versionId
+          },
+          position: {
+            line: position.lineNumber - 1,
+            character: position.column - 1
+          },
+          context: {
+            triggerKind: triggerKind + 1,
+            triggerCharacter: triggerCharacter
+          }
+        } as lsp.CompletionParams)) || []
+      if ('items' in result) {
+        result = result.items
+      }
+      return {
+        suggestions: result
+          .sort((a: lsp.CompletionItem, b: lsp.CompletionItem) => {
+            return b['score'] - a['score']
+          })
+          .filter((completionItem: lsp.CompletionItem) => {
+            return completionItem.insertText?.startsWith(triggerCharacter)
+          })
+          .map((completionItem: lsp.CompletionItem) => {
+            const textEdit = completionItem.textEdit as lsp.TextEdit
+            return {
+              label: completionItem.label,
+              kind: LSPCompletionItemKindToMonaco[completionItem.kind || 0],
+              documentation: completionItem.documentation,
+              insertText: textEdit.newText,
+              insertTextRules: 4,
+              range: LSPRangeToMonaco(textEdit.range)
+            }
+          })
+      } as monaco.languages.CompletionList
     }
   }
 }
@@ -127,6 +219,6 @@ export function createLanguageClient(
 type Tail<T extends unknown[]> = T extends [unknown, ...infer R] ? R : never
 
 export function clangdLanguageServer(...args: Tail<Parameters<typeof createLanguageClient>>) {
-  const a = StdioLS('clangd', ['--background-index'])
+  const a = StdioLS('clangd')
   return createLanguageClient(a, ...args)
 }

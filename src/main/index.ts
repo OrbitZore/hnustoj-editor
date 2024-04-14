@@ -1,4 +1,4 @@
-import { logMain } from '../lib/log'
-logMain.initialize()
+import log from 'electron-log/main.js'
+log.initialize()
 import './lspclient'
 import './app'
