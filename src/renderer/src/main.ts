@@ -13,5 +13,7 @@ app.provide(
     column: 0
   })
 )
+app.provide(appkey.editorLanguage, ref('cpp'))
+app.provide(appkey.editorPath, ref('/tmp/test.cpp'))
 
 app.mount('#app')

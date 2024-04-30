@@ -1,0 +1,2 @@
+import './langMenu'
+import './mainMenu'

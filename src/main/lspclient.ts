@@ -1,75 +1,95 @@
-import { LanguageClient, clangdLanguageServer } from '../lib/LanguageServer'
 import * as lsp from 'vscode-languageserver-protocol'
 import type * as monaco from 'monaco-editor'
-import log from 'electron-log/main.js'
 import { IpcMainInvokeEvent, ipcMain } from 'electron'
-import * as tmp from 'tmp'
-import { remove as remove_ } from 'fs-extra'
-const remove = promisify(remove_)
-import { promisify } from 'util'
-import { open } from 'fs/promises'
+import * as fs from 'fs/promises'
 export type LanguageSupportedKey = 'cpp'
-const lspClientLog = log.scope('lsp')
+import * as hel from '../lib/lib'
+
+function pathToURI(path: string) {
+  return 'file://' + path
+}
+
+function uriToPath(uri: string) {
+  return uri.slice(7)
+}
+
 class LSPClient {
-  lang?: LanguageSupportedKey
-  filePath?: string
-  languageClient?: LanguageClient
-  sender?: Electron.WebContents
-  dispose() {
-    this.languageClient?.dispose()
-    this.languageClient = undefined
-    if (this.filePath) {
-      remove(this.filePath)
+  fileMeta = new Map<
+    string,
+    {
+      languagekey: string
+      sender: Electron.WebContents
     }
-    this.filePath = undefined
+  >()
+  async open(_event: IpcMainInvokeEvent, path: string, languagekey: string) {
+    console.log('open', path, languagekey)
+    const uri = pathToURI(path)
+    const ls = hel.getLanguageProvider(languagekey)
+    if (!ls) return
+    this.fileMeta.set(path, { languagekey, sender: _event.sender })
+    const fd = await fs.open(path, 'a+')
+    const fileContent = await fd.readFile('utf8')
+    await ls.open(uri, languagekey, fileContent)
+    fd.close()
+    return fileContent
   }
-  async reload(_event: IpcMainInvokeEvent, lang: LanguageSupportedKey, text: string) {
-    this.sender = _event.sender
-    switch (lang) {
-      case 'cpp':
-        this.dispose()
-        this.filePath = (await promisify(tmp.file)()) + '.cpp'
-        this.languageClient = clangdLanguageServer(
-          this.filePath,
-          this.onPublishDiagnostics.bind(this)
-        )
-        break
-    }
-    this.lang = lang
-    this.languageClient.onError((error) => {
-      lspClientLog.error('error!', error)
-    })
-    await this.languageClient.trace(lsp.Trace.Verbose, lspClientLog)
-    this.languageClient.listen()
-    const ret = await this.languageClient.initialize()
-    await this.languageClient.initialized()
-    await this.languageClient.open(lang, text)
-    return ret
+  async close(_event: IpcMainInvokeEvent, path: string) {
+    const filemeta = this.fileMeta.get(path)
+    if (!filemeta) return
+    const ls = hel.getLanguageProvider(filemeta.languagekey)
+    const uri = pathToURI(path)
+    this.fileMeta.delete(path)
+    return ls?.close(uri)
   }
-  async save(_event: IpcMainInvokeEvent, text: string) {
-    if (this.filePath) {
-      const fd = await open(this.filePath, 'w')
-      await fd.write(text, undefined, 'utf8')
-      await fd.close()
-    }
+  async save(_event: IpcMainInvokeEvent, path: string, text: string) {
+    const fd = await fs.open(path, 'w')
+    await fd.write(text)
+    await fd.close()
   }
-  async onChange(_event: IpcMainInvokeEvent, changeEvent: monaco.editor.IModelContentChangedEvent) {
-    await this.languageClient?.didChange(changeEvent)
+  async changeLanguage(_event: IpcMainInvokeEvent, path: string, languagekey: string) {
+    const uri = pathToURI(path)
+    const filemeta = this.fileMeta.get(path)
+    if (!filemeta) return
+    const oldls = hel.getLanguageProvider(filemeta.languagekey)
+    await oldls?.close(pathToURI(path))
+    const newls = hel.getLanguageProvider(languagekey)
+    await newls?.open(uri, languagekey, await fs.readFile(path, 'utf8'))
+    this.fileMeta.set(path, { languagekey, sender: _event.sender })
+  }
+  async change(
+    _event: IpcMainInvokeEvent,
+    path: string,
+    changeEvent: monaco.editor.IModelContentChangedEvent
+  ) {
+    const filemeta = this.fileMeta.get(path)
+    if (!filemeta) return
+    const ls = hel.getLanguageProvider(filemeta.languagekey)
+    const uri = pathToURI(path)
+    await ls?.didChange(uri, changeEvent)
   }
   onPublishDiagnostics(publishDiagnostics: lsp.PublishDiagnosticsParams) {
-    if (this.sender && publishDiagnostics.uri === 'file://' + this.filePath) {
-      this.sender.send('PublishDiagnostics', publishDiagnostics.diagnostics)
-    }
+    const sender = this.fileMeta.get(uriToPath(publishDiagnostics.uri))?.sender
+    console.log('asgsag', publishDiagnostics.uri, sender)
+    if (!sender) return
+    sender.send('PublishDiagnostics', publishDiagnostics)
+  }
+  getInitializeResult(_event: IpcMainInvokeEvent, lang: string) {
+    const provider = hel.getLanguageProvider(lang)
+    return provider?.initializeResult
   }
   async requestCompletion(
     _event: IpcMainInvokeEvent,
+    path: string,
     versionId: number,
     position: monaco.Position,
     triggerKind: number,
     triggerCharacter?: string
   ): Promise<monaco.languages.CompletionList> {
+    const filemeta = this.fileMeta.get(path)
+    const ls = hel.getLanguageProvider(filemeta?.languagekey)
     return (
-      (await this.languageClient?.requestCompletion(
+      (await ls?.requestCompletion(
+        pathToURI(path),
         versionId,
         position,
         triggerKind,
@@ -81,8 +101,12 @@ class LSPClient {
   }
 }
 const lsc = new LSPClient()
-ipcMain.handle('lsp.change', lsc.onChange.bind(lsc))
-ipcMain.handle('lsp.reload', lsc.reload.bind(lsc))
+hel.setLanguageServerEventHandler(lsc)
+ipcMain.handle('lsp.change', lsc.change.bind(lsc))
+ipcMain.handle('lsp.open', lsc.open.bind(lsc))
+ipcMain.handle('lsp.changeLanguage', lsc.changeLanguage.bind(lsc))
+ipcMain.handle('lsp.close', lsc.close.bind(lsc))
 ipcMain.handle('lsp.save', lsc.save.bind(lsc))
 ipcMain.handle('lsp.requestCompletion', lsc.requestCompletion.bind(lsc))
+ipcMain.handle('lsp.getInitializeResult', lsc.getInitializeResult.bind(lsc))
 export default lsc

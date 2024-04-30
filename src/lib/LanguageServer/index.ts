@@ -1,22 +1,7 @@
 import * as lsp from 'vscode-languageserver-protocol'
-import StdioLS from './ls/StdioLS'
 import type * as monaco from 'monaco-editor'
-import path from 'path'
+import type { LanguageClient } from '../lib'
 
-export interface LanguageClient extends lsp.ProtocolConnection {
-  uri: string
-  versionId: number
-  initialize(): Promise<lsp.InitializeResult<unknown>>
-  open(languageId: string, text: string): Promise<void>
-  initialized(): Promise<void>
-  didChange(changes: monaco.editor.IModelContentChangedEvent): Promise<void>
-  requestCompletion(
-    versionId: number,
-    position: monaco.Position,
-    triggerKind: number,
-    triggerCharacter?: string
-  ): Promise<monaco.languages.CompletionList>
-}
 const LSPCompletionItemKindToMonaco = {
   1: 18, // const Text: 1;
   2: 0, // const Method: 2;
@@ -52,22 +37,10 @@ const LSPRangeToMonaco = (range: lsp.Range): monaco.IRange => {
     endColumn: range.end.character + 1
   }
 }
-export function createLanguageClient(
-  connection: lsp.ProtocolConnection,
-  filePath: string,
-  publishDiagnosticsHandler?: (publishDiagnostics: lsp.PublishDiagnosticsParams) => void
-): LanguageClient {
+export function createLanguageClient(connection: lsp.ProtocolConnection): LanguageClient {
   return {
     ...connection,
-    uri: 'file://' + filePath,
-    versionId: 1,
     initialize() {
-      publishDiagnosticsHandler &&
-        connection.onNotification(
-          lsp.PublishDiagnosticsNotification.type,
-          publishDiagnosticsHandler
-        )
-      const rootUri = 'file://' + path.basename(filePath)
       return connection.sendRequest(lsp.InitializeRequest.type, {
         capabilities: {
           offsetEncoding: ['utf-8'],
@@ -132,27 +105,33 @@ export function createLanguageClient(
           fallbackFlags: []
         },
         processId: null,
-        rootPath: null,
-        rootUri
+        rootPath: null
       } as unknown as lsp.InitializeParams)
     },
     initialized() {
       return connection.sendNotification(lsp.InitializedNotification.type, {})
     },
-    open(languageId: string, text: string) {
+    open(uri: string, languageId: string, text: string) {
       return connection.sendNotification(lsp.DidOpenTextDocumentNotification.type, {
         textDocument: {
-          uri: this.uri,
+          uri,
           languageId: languageId,
           version: 1,
           text
         }
       })
     },
-    didChange(changeEvent: monaco.editor.IModelContentChangedEvent) {
+    close(uri: string) {
+      return connection.sendNotification(lsp.DidCloseTextDocumentNotification.type, {
+        textDocument: {
+          uri
+        }
+      })
+    },
+    didChange(uri: string, changeEvent: monaco.editor.IModelContentChangedEvent) {
       return connection.sendNotification(lsp.DidChangeTextDocumentNotification.type, {
         textDocument: {
-          uri: this.uri,
+          uri,
           version: changeEvent.versionId
         },
         contentChanges: changeEvent.changes.map((change) => {
@@ -168,7 +147,13 @@ export function createLanguageClient(
         })
       })
     },
+    onPublishDiagnostics(
+      publishDiagnosticsHandler: (publishDiagnostics: lsp.PublishDiagnosticsParams) => void
+    ) {
+      connection.onNotification(lsp.PublishDiagnosticsNotification.type, publishDiagnosticsHandler)
+    },
     async requestCompletion(
+      uri: string,
       versionId: number,
       position: monaco.Position,
       triggerKind: number,
@@ -177,7 +162,7 @@ export function createLanguageClient(
       let result =
         (await connection.sendRequest(lsp.CompletionRequest.type, {
           textDocument: {
-            uri: this.uri,
+            uri,
             version: versionId
           },
           position: {
@@ -214,11 +199,4 @@ export function createLanguageClient(
       } as monaco.languages.CompletionList
     }
   }
-}
-
-type Tail<T extends unknown[]> = T extends [unknown, ...infer R] ? R : never
-
-export function clangdLanguageServer(...args: Tail<Parameters<typeof createLanguageClient>>) {
-  const a = StdioLS('clangd')
-  return createLanguageClient(a, ...args)
 }

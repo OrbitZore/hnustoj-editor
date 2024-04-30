@@ -16,18 +16,16 @@ import StatusBar from './layout/StatusBar.vue'
 import SideBar from './layout/SideBar.vue'
 const statusBar = ref<InstanceType<typeof StatusBar>>()
 const position = inject(appkey.editorPositon)
+const lang = inject(appkey.editorLanguage)
 onMounted(() => {
   if (statusBar.value) {
     statusBar.value.leftRegist({
-      text: 'C/C++',
-      click: () => {
-        console.log('click')
-      }
-    })
-    statusBar.value.leftRegist({
-      text: 'C/C++',
-      click: () => {
-        console.log('click')
+      text: computed(() => lang?.value || '未选择语言'),
+      click: async () => {
+        const result = await window.api.menu.langChoose()
+        if (lang && result) {
+          lang.value = result
+        }
       }
     })
     statusBar.value.rightRegist({

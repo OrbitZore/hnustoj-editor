@@ -7,24 +7,16 @@ const api = {
     ipcRenderer.send('rpcCall', channel, method, obj)
   },
   lsp: {
-    change(change) {
-      return ipcRenderer.invoke('lsp.change', change)
-    },
-    reload(languageId, text) {
-      return ipcRenderer.invoke('lsp.reload', languageId, text)
-    },
-    save(text) {
-      return ipcRenderer.invoke('lsp.save', text)
-    },
-    requestCompletion(versionId, position, triggerKind, triggerCharacter) {
-      return ipcRenderer.invoke(
-        'lsp.requestCompletion',
-        versionId,
-        position,
-        triggerKind,
-        triggerCharacter
-      )
-    }
+    change: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.change'),
+    open: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.open'),
+    changeLanguage: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.changeLanguage'),
+    close: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.close'),
+    save: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.save'),
+    getInitializeResult: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.getInitializeResult'),
+    requestCompletion: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.requestCompletion')
+  },
+  menu: {
+    langChoose: ipcRenderer.invoke.bind(ipcRenderer, 'menu.langChoose')
   }
 }
 // Use `contextBridge` APIs to expose Electron APIs to
