@@ -1,4 +1,6 @@
-import { BrowserWindow, Menu, MenuItemConstructorOptions } from 'electron'
+import { BrowserWindow, Menu, MenuItemConstructorOptions, dialog } from 'electron'
+import log from 'electron-log/main.js'
+const mainMenuLog = log.scope('mainmenu')
 export default function buildMainMenu(window: BrowserWindow) {
   const template = [
     // { role: 'fileMenu' }
@@ -6,9 +8,19 @@ export default function buildMainMenu(window: BrowserWindow) {
       label: '文件',
       submenu: [
         {
-          label: '设置工作目录',
+          label: '打开',
           accelerator: 'CmdOrCtrl+O',
-          click: () => window.webContents.send('menu:open-directory')
+          click: async () => {
+            const result = await dialog.showOpenDialog(window, {
+              title: '打开文件...',
+              buttonLabel: '打开',
+              properties: ['openFile']
+            })
+            if (result.canceled) return
+            const filename = result.filePaths[0]
+            mainMenuLog.log('open file:', filename)
+            window.webContents.send('menu:open', filename)
+          }
         },
         {
           label: '保存',

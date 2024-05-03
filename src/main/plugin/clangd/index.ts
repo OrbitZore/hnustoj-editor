@@ -5,7 +5,7 @@ import { exec } from '@lib/exec'
 import log from 'electron-log/main.js'
 import * as lsp from 'vscode-languageserver-protocol'
 import { appconf } from '@lib/setting'
-const lspClientLog = log.scope('clangd')
+const clangdLog = log.scope('clangd')
 const createClangd = () => ({
   ...createLanguageClient(StdioLS('clangd')),
   languageSupported: [
@@ -24,8 +24,8 @@ const createClangd = () => ({
           maxBuffer: appconf.CompilerOutputLimit
         },
         (error, stdout, stderr) => {
-          if (stderr) lspClientLog.error('compiler stderr:', stderr)
-          if (error) lspClientLog.error('compiler error:', error)
+          if (stderr) clangdLog.error('compiler stderr:', stderr)
+          if (error) clangdLog.error('compiler error:', error)
           resolve({
             code: error?.code || 0,
             stdout: stdout,
@@ -40,13 +40,13 @@ const createClangd = () => ({
       const timeout = options?.timelimit || appconf.ProgramTimeLimit
       let judgeResult: hal.JudgeResult = hal.JudgeResult.Accepted
       const _process = exec(
-        `${filename} ${execArgs}`,
+        `${filename} ${execArgs || ''}`,
         {
           maxBuffer: appconf.ProgramOutputLimit
         },
         (error, stdout, stderr) => {
           clearTimeout(timeoutEvent)
-          if (error) lspClientLog.error('run error:', error)
+          if (error) clangdLog.error('run error:', error)
           resolve({
             judgeResult,
             code: error?.code || 0,
@@ -74,5 +74,5 @@ clangd = {
   initializeResult
 }
 await clangd.initialized()
-await clangd.trace(lsp.Trace.Verbose, lspClientLog)
+await clangd.trace(lsp.Trace.Verbose, clangdLog)
 hal.registerLanguageProvider(clangd)

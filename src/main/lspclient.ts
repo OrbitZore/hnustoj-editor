@@ -4,7 +4,8 @@ import { IpcMainInvokeEvent, ipcMain } from 'electron'
 import * as fs from 'fs/promises'
 export type LanguageSupportedKey = 'cpp'
 import * as hel from '@lib'
-
+import log from 'electron-log/main.js'
+const lspClientLog = log.scope('LSPClient')
 function pathToURI(path: string) {
   return 'file://' + path
 }
@@ -22,7 +23,7 @@ class LSPClient {
     }
   >()
   async open(_event: IpcMainInvokeEvent, path: string, languagekey: string) {
-    console.log('open', path, languagekey)
+    lspClientLog.log('open', path, languagekey, _event)
     const uri = pathToURI(path)
     const ls = hel.getLanguageProvider(languagekey)
     if (!ls) return
@@ -69,7 +70,6 @@ class LSPClient {
   }
   onPublishDiagnostics(publishDiagnostics: lsp.PublishDiagnosticsParams) {
     const sender = this.fileMeta.get(uriToPath(publishDiagnostics.uri))?.sender
-    console.log('asgsag', publishDiagnostics.uri, sender)
     if (!sender) return
     sender.send('PublishDiagnostics', publishDiagnostics)
   }

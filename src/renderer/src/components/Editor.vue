@@ -23,6 +23,7 @@ const editorpath = inject(appkey.editorPath)
 const editorlang = inject(appkey.editorLanguage)
 let editor: monaco.editor.IStandaloneCodeEditor
 const changeQueue = new Queue({ concurrency: 1, autostart: true })
+let loadingcnt = 0
 
 onMounted(async () => {
   if (!codeEditBox.value) {
@@ -37,9 +38,23 @@ onMounted(async () => {
     ...props.options
   })
 
-  editor.onDidChangeModelContent((event: monaco.editor.IModelContentChangedEvent) =>
-    changeQueue.push(() => editorpath && window.api.lsp.change(editorpath.value, event))
+  editor.onDidChangeModelContent(
+    (event: monaco.editor.IModelContentChangedEvent) =>
+      !loadingcnt &&
+      changeQueue.push(() => editorpath && window.api.lsp.change(editorpath.value, event))
   )
+  window.electron.ipcRenderer.on('menu:open', (_event: IpcRendererEvent, filename: string) => {
+    console.log('opened', filename)
+    if (editorpath) {
+      editorpath.value = filename
+    }
+  })
+  window.electron.ipcRenderer.on('menu:save', () => {
+    console.log('saved')
+    if (editorpath) {
+      window.api.lsp.save(editorpath.value, editor.getValue())
+    }
+  })
   window.electron.ipcRenderer.on(
     'PublishDiagnostics',
     (_event: IpcRendererEvent, diagnostics: lsp.PublishDiagnosticsParams) => {
@@ -104,14 +119,16 @@ onMounted(async () => {
   )
   // 路径或语言变化时，重新打开文件
   watch(
-    () => ({ editorpath, editorlang }),
+    () => [editorpath?.value, editorlang?.value],
     async (new_, old) => {
-      if (old?.editorpath && old?.editorlang) {
-        await window.api.lsp.close(old.editorpath.value)
+      loadingcnt++
+      if (old && old[0]) {
+        await window.api.lsp.close(old[0])
       }
-      if (editor && new_?.editorpath && new_?.editorlang) {
-        editor.setValue(await window.api.lsp.open(new_?.editorpath.value, new_?.editorlang.value))
+      if (editor && new_[0] && new_[1]) {
+        editor.setValue(await window.api.lsp.open(new_[0], new_[1]))
       }
+      loadingcnt--
     },
     { immediate: true }
   )

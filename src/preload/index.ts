@@ -1,22 +1,29 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
+function makeipc(ipcname) {
+  return (...args) => {
+    console.log('invoke', ipcname, args)
+    return ipcRenderer.invoke(ipcname, ...args)
+  }
+}
+
 // Custom APIs for renderer
 const api = {
   rpcCall(channel, method, obj) {
     ipcRenderer.send('rpcCall', channel, method, obj)
   },
   lsp: {
-    change: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.change'),
-    open: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.open'),
-    changeLanguage: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.changeLanguage'),
-    close: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.close'),
-    save: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.save'),
-    getInitializeResult: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.getInitializeResult'),
-    requestCompletion: ipcRenderer.invoke.bind(ipcRenderer, 'lsp.requestCompletion')
+    change: makeipc('lsp.change'),
+    open: makeipc('lsp.open'),
+    changeLanguage: makeipc('lsp.changeLanguage'),
+    close: makeipc('lsp.close'),
+    save: makeipc('lsp.save'),
+    getInitializeResult: makeipc('lsp.getInitializeResult'),
+    requestCompletion: makeipc('lsp.requestCompletion')
   },
   menu: {
-    langChoose: ipcRenderer.invoke.bind(ipcRenderer, 'menu.langChoose')
+    langChoose: makeipc('menu.langChoose')
   }
 }
 // Use `contextBridge` APIs to expose Electron APIs to
