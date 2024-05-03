@@ -4,5 +4,5 @@ import './menu'
 import './plugin'
 import './lspclient'
 import './app'
-import * as lib from '../lib/lib'
+import * as lib from '@lib'
 export default lib

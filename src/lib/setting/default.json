@@ -1,0 +1,14 @@
+{
+  // 编译器输出缓冲区上限，超过忽略，单位字节
+  "CompilerOutputLimit": 1048576,
+  // 程序输出上限
+  "ProgramOutputLimit": 16777216,
+  // 程序执行超时上限 单位秒
+  "ProgramTimeLimit": 1,
+  "LanguageProvicer": {
+    "cpp": {
+      // 编译器编译命令
+      "compileCommand": "g++ -std=c++11 -O2"
+    }
+  }
+}

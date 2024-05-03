@@ -3,6 +3,11 @@
   "include": ["electron.vite.config.*", "src/main/**/*", "src/lib/**/*","src/ipc/*", "src/preload/**/*"],
   "compilerOptions": {
     "composite": true,
-    "types": ["electron-vite/node"]
+    "types": ["electron-vite/node"],
+    "baseUrl": "./src",
+    "paths": {
+      "@lib/*": ["lib/*"],
+      "@lib": ["lib"],
+    }
   }
 }

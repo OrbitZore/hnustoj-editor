@@ -1,6 +1,6 @@
 import * as lsp from 'vscode-languageserver-protocol'
 import type * as monaco from 'monaco-editor'
-import type { LanguageClient } from '../lib'
+import type { LanguageClient } from '..'
 
 const LSPCompletionItemKindToMonaco = {
   1: 18, // const Text: 1;

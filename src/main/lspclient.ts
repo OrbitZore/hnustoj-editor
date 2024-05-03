@@ -3,7 +3,7 @@ import type * as monaco from 'monaco-editor'
 import { IpcMainInvokeEvent, ipcMain } from 'electron'
 import * as fs from 'fs/promises'
 export type LanguageSupportedKey = 'cpp'
-import * as hel from '../lib/lib'
+import * as hel from '@lib'
 
 function pathToURI(path: string) {
   return 'file://' + path

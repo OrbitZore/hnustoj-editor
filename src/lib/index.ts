@@ -113,9 +113,30 @@ export interface LanguageSupported {
   shortcut: string[]
 }
 
+export interface CompilerResult {
+  code: number
+  stdout: string
+  outfilename: string
+}
+
+export interface RunOptions {
+  detached: boolean
+  input?: string
+  timelimit?: number
+}
+
+export interface RunResult {
+  judgeResult: JudgeResult
+  code: number
+  output: string
+  stderr: string
+}
+
 export interface LanguageProvider extends LanguageClient {
   languageSupported: LanguageSupported[]
   initializeResult: lsp.InitializeResult<unknown>
+  compile(filename: string, execCmd?: string): Promise<CompilerResult>
+  run(filename: string, execArgs?: string, options?: RunOptions): Promise<RunResult>
 }
 
 export interface LanguageServerEventHandler {
