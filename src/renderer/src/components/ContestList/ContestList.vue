@@ -1,5 +1,5 @@
 <template>
-  <div>OJ Viewer</div>
+  <div>ContestList</div>
 </template>
 <script setup lang="ts"></script>
 

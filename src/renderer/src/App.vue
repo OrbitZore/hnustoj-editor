@@ -40,5 +40,5 @@ onMounted(() => {
 </script>
 
 <style>
-@import url('//at.alicdn.com/t/c/font_4451214_ce3gwkutpe.css');
+@import url('./assets/iconfont.css');
 </style>

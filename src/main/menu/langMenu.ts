@@ -1,6 +1,6 @@
 import { Menu, MenuItemConstructorOptions, ipcMain } from 'electron'
 ipcMain.handle('menu.langChoose', async () => {
-  return new Promise((resolv, reject) => {
+  return new Promise((resolv) => {
     const template = [
       {
         label: 'C/C++',
@@ -16,7 +16,7 @@ ipcMain.handle('menu.langChoose', async () => {
     const menu = Menu.buildFromTemplate(template)
     menu.popup({
       callback: () => {
-        reject()
+        resolv('')
       }
     })
   })

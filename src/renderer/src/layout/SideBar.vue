@@ -21,11 +21,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import OJViewer from '../components/OJViewer/main'
-import VersionCtrl from '../components/VersionCtrl/main'
-const tabs = { OJViewer, VersionCtrl }
-const currentTab = ref('OJViewer')
+
+import { onMounted, ref } from 'vue'
+import { tabs } from '../components/sidebarComponents'
+const currentTab = ref('OJManager')
 const visible = ref(true)
 function clicked(tab) {
   if (currentTab.value === tab) {
@@ -35,6 +34,11 @@ function clicked(tab) {
     visible.value = true
   }
 }
+onMounted(() => {
+  window.electron.ipcRenderer.on('menu:toggleSidebar', () => {
+    visible.value = !visible.value
+  })
+})
 </script>
 
 <style>
@@ -60,7 +64,7 @@ function clicked(tab) {
   cursor: pointer;
   background-color: transparent;
   border: none;
-  margin: 5px 0;
+  padding: 8px 5px;
 }
 .sidebarfont {
   font-size: 32px;

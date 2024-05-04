@@ -100,7 +100,7 @@ export default function buildMainMenu(window: BrowserWindow) {
         {
           label: '版本管理器',
           accelerator: 'CmdOrCtrl+Shift+V',
-          click: () => window.webContents.send('menu:toggleVersionManager')
+          click: () => window.webContents.send('menu:toggleVersionCtrl')
         },
         {
           label: '调试器',
@@ -124,7 +124,6 @@ export default function buildMainMenu(window: BrowserWindow) {
     {
       label: '运行',
       submenu: [
-        { label: '编译', accelerator: 'F10', click: () => window.webContents.send('menu:compile') },
         {
           label: '编译并运行',
           accelerator: 'F11',
