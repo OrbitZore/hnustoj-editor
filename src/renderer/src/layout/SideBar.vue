@@ -21,11 +21,13 @@
 </template>
 
 <script setup lang="ts">
-
 import { onMounted, ref } from 'vue'
 import { tabs } from '../components/sidebarComponents'
 const currentTab = ref('OJManager')
 const visible = ref(true)
+for (const tab in tabs) {
+  window.electron.ipcRenderer.on('menu:toggle' + tab, () => clicked(tab))
+}
 function clicked(tab) {
   if (currentTab.value === tab) {
     visible.value = !visible.value

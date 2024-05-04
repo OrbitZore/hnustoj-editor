@@ -112,12 +112,12 @@ export default function buildMainMenu(window: BrowserWindow) {
           accelerator: 'CmdOrCtrl+Shift+S',
           click: () => window.webContents.send('menu:toggleStatics')
         },
-        { type: 'separator' },
-        {
-          label: '扩展',
-          accelerator: 'CmdOrCtrl+Shift+E',
-          click: () => window.webContents.send('menu:toggleExtensions')
-        }
+        { type: 'separator' }
+        // {
+        //   label: '扩展',
+        //   accelerator: 'CmdOrCtrl+Shift+E',
+        //   click: () => window.webContents.send('menu:toggleExtensions')
+        // }
       ]
     },
     // { label: 'windowMenu' }

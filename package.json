@@ -56,6 +56,7 @@
     "electron-vite": "^2.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.20.1",
+    "naive-ui": "^2.38.2",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
