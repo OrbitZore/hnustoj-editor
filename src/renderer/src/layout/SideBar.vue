@@ -11,6 +11,11 @@
           ]"
         ></i>
       </button>
+      <div class="sidebar-end" style="margin-top: auto">
+        <div class="sidebar-button" @click="$emit('toggle', 'term')">
+          <i class="iconfont sidebarfont icon-terminalzhongduan"></i>
+        </div>
+      </div>
     </div>
     <template v-if="visible">
       <KeepAlive>
@@ -21,13 +26,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, defineEmits } from 'vue'
 import { tabs } from '../components/sidebarComponents'
 const currentTab = ref('OJManager')
 const visible = ref(true)
+const emit = defineEmits(['toggle', 'sidebar-toggle'])
 for (const tab in tabs) {
   window.electron.ipcRenderer.on('menu:toggle' + tab, () => clicked(tab))
 }
+window.electron.ipcRenderer.on('menu:toggleTerminal', () => emit('toggle', 'term'))
 function clicked(tab) {
   if (currentTab.value === tab) {
     visible.value = !visible.value
@@ -35,6 +42,7 @@ function clicked(tab) {
     currentTab.value = tab
     visible.value = true
   }
+  emit('sidebar-toggle')
 }
 onMounted(() => {
   window.electron.ipcRenderer.on('menu:toggleSidebar', () => {
@@ -60,6 +68,9 @@ onMounted(() => {
   justify-content: flex-start;
   height: 100%;
   border-right: 1px solid #e0e0e0;
+}
+.sidebar-end {
+  flex: 0;
 }
 .sidebar-button {
   flex: 0;

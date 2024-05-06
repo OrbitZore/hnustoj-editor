@@ -1,8 +1,13 @@
 <template>
   <div class="hbox">
     <div class="vbox">
-      <SideBar />
-      <Editor />
+      <SideBar @toggle="toggleMainView" @sidebar-toggle="sidebarToggled" />
+      <KeepAlive>
+        <Editor :show="currentMainView == 'editor' || visibleEditor" ref="edtior" />
+      </KeepAlive>
+      <KeepAlive>
+        <Term ref="term" :show="currentMainView == 'term' && !visibleEditor" />
+      </KeepAlive>
     </div>
     <StatusBar ref="statusBar" />
   </div>
@@ -11,12 +16,28 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref } from 'vue'
 import * as appkey from './AppKey'
+import Term from './components/Term.vue'
 import Editor from './components/Editor.vue'
 import StatusBar from './layout/StatusBar.vue'
 import SideBar from './layout/SideBar.vue'
 const statusBar = ref<InstanceType<typeof StatusBar>>()
+const term = ref<InstanceType<typeof Term>>()
 const position = inject(appkey.editorPositon)
 const lang = inject(appkey.editorLanguage)
+const currentMainView = ref('edtior')
+const visibleEditor = ref(true)
+function toggleMainView(tab) {
+  if (currentMainView.value == tab) {
+    visibleEditor.value = !visibleEditor.value
+  } else {
+    visibleEditor.value = false
+    currentMainView.value = tab
+  }
+}
+function sidebarToggled() {
+  term.value?.resize()
+  console.log('resizede')
+}
 onMounted(() => {
   if (statusBar.value) {
     statusBar.value.leftRegist({

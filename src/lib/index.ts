@@ -23,6 +23,7 @@ export interface Problem {
   tags: string[]
   discribe: string
   tests: TestCase
+  status: JudgeResult
 }
 
 export class TimeInterval {
@@ -45,6 +46,7 @@ export enum JudgeResult {
   Compiling,
   RunningJudging,
   Accepted,
+  Unknown,
   PresentationError,
   WrongAnswer,
   TimeLimitExceeded,
@@ -79,13 +81,49 @@ export interface Pagination {
   limit: number
 }
 
+export interface ContestFilter {
+  name: string
+  tags: string[]
+  pageination: Pagination
+}
+
+export interface ProblemFilter {
+  name: string
+  tags: string[]
+  pageination: Pagination
+}
+
+export enum OnlineJudgerStatus{
+  OK,
+  NotLogin,
+  NotSupported,
+  NoPermission,
+  NetworkError,
+  UnknownError
+}
+
+export interface OnlineJudgerStatusResponse {
+  status: OnlineJudgerStatus
+}
+
+export interface ContestList extends OnlineJudgerStatusResponse {
+  contests: Contest[]
+}
+
+export interface ProblemList extends OnlineJudgerStatusResponse {
+  problems: Problem[]
+}
+
 export interface OnlineJudger {
   name: string
-  logined: boolean
+  login(): Promise<LoginedUser>
   loadLoginView(webview: WebviewTag)
-  getContestList(options: Pagination): Contest[]
+  getContestTags(): string[]
+  getProblemTags(): string[]
+  getContestList(options: ContestFilter): ContestList
+  getProblemList(options: ProblemFilter): ProblemList
+  getProblemFromContest(contestid: string): ProblemList
   getRank(contestid: string): UserRank[]
-  getProblemList(options: Pagination): Problem[]
   getCommit(userid: string, options: Pagination): Submit[]
   whoami(): User
 }

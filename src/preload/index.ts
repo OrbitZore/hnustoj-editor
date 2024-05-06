@@ -3,7 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 function makeipc(ipcname) {
   return (...args) => {
-    // console.log('invoke', ipcname, args)
+    console.log('invoke', ipcname, args)
     return ipcRenderer.invoke(ipcname, ...args)
   }
 }
@@ -21,6 +21,12 @@ const api = {
     save: makeipc('lsp.save'),
     getInitializeResult: makeipc('lsp.getInitializeResult'),
     requestCompletion: makeipc('lsp.requestCompletion')
+  },
+  term: {
+    open: makeipc('term.open'),
+    stdin: makeipc('term.stdin'),
+    close: makeipc('term.close'),
+    resize: makeipc('term.resize')
   },
   menu: {
     langChoose: makeipc('menu.langChoose')

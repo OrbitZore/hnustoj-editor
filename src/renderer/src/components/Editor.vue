@@ -1,12 +1,12 @@
 <template>
-  <div ref="codeEditBox" class="codeEditBox codeEditBox1" />
+  <div v-show="show" ref="codeEditBox" class="codeEditBox codeEditBox1" />
 </template>
 <script lang="ts" setup>
 function uriToPath(uri: string) {
   return uri.slice(7)
 }
 
-import { onMounted, onBeforeUnmount, ref, watch, inject } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, inject, nextTick } from 'vue'
 import * as monaco from 'monaco-editor'
 import * as appkey from '../AppKey'
 import { editorProps } from './EditorType'
@@ -24,7 +24,17 @@ const editorlang = inject(appkey.editorLanguage)
 let editor: monaco.editor.IStandaloneCodeEditor
 const changeQueue = new Queue({ concurrency: 1, autostart: true })
 let loadingcnt = 0
-
+watch(
+  () => props.show,
+  (newv) => {
+    if (newv) {
+      nextTick(() => {
+        editor.layout()
+        editor.focus()
+      })
+    }
+  }
+)
 onMounted(async () => {
   if (!codeEditBox.value) {
     return

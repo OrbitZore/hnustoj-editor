@@ -32,6 +32,10 @@ export const editorProps = {
     type: Boolean,
     default: false
   },
+  show: {
+    type: Boolean,
+    default: true
+  },
   theme: {
     type: String as PropType<Theme>,
     validator(value: string): boolean {
