@@ -1,14 +1,9 @@
 import * as lsp from 'vscode-languageserver-protocol'
 import type * as monaco from 'monaco-editor'
-import { WebviewTag } from 'electron'
 export interface User {
   userid: string
   username: string
   extra: object
-}
-
-export interface LoginedUser extends User {
-  token: string
 }
 
 export interface TestCase {
@@ -17,12 +12,23 @@ export interface TestCase {
   judger: (_in: string, out: string, ans: string) => number
 }
 
-export interface Problem {
+export interface ProblemMeta {
   creator: string
   problemid: string
-  tags: string[]
+  problemName: string
+  contestInfo?: {
+    contestid: string
+    contestProblemid: string
+    ac: number
+    submit: number
+  }
+}
+
+export interface ProblemInfo extends ProblemMeta {
   discribe: string
   tests: TestCase
+  ac: number
+  submit: number
   status: JudgeResult
 }
 
@@ -33,11 +39,15 @@ export class TimeInterval {
   ) {}
 }
 
-export interface Contest {
-  Contestid: string
-  ContestInfo: string
-  ContestDuration: TimeInterval
-  problems: Problem[]
+export interface ContestMeta {
+  contestid: string
+  contestName: string
+}
+
+export interface ContestInfo extends ContestMeta {
+  contestInfo: string
+  problems: ProblemMeta[]
+  contestDuration: TimeInterval
 }
 
 export enum JudgeResult {
@@ -77,55 +87,57 @@ export interface UserRank {
 }
 
 export interface Pagination {
-  offset: number
-  limit: number
+  page: number
 }
 
 export interface ContestFilter {
-  name: string
-  tags: string[]
-  pageination: Pagination
+  name?: string
+  tags?: string[]
+  pageination?: Pagination
 }
 
 export interface ProblemFilter {
-  name: string
-  tags: string[]
-  pageination: Pagination
-}
-
-export enum OnlineJudgerStatus{
-  OK,
-  NotLogin,
-  NotSupported,
-  NoPermission,
-  NetworkError,
-  UnknownError
-}
-
-export interface OnlineJudgerStatusResponse {
-  status: OnlineJudgerStatus
-}
-
-export interface ContestList extends OnlineJudgerStatusResponse {
-  contests: Contest[]
-}
-
-export interface ProblemList extends OnlineJudgerStatusResponse {
-  problems: Problem[]
+  name?: string
+  tags?: string[]
+  pageination?: Pagination
 }
 
 export interface OnlineJudger {
   name: string
-  login(): Promise<LoginedUser>
-  loadLoginView(webview: WebviewTag)
-  getContestTags(): string[]
-  getProblemTags(): string[]
-  getContestList(options: ContestFilter): ContestList
-  getProblemList(options: ProblemFilter): ProblemList
-  getProblemFromContest(contestid: string): ProblemList
+  login(): Promise<User>
+  getContestTags(): Promise<string[]>
+  getProblemTags(): Promise<string[]>
+  getContestList(options: ContestFilter): Promise<ContestMeta[]>
+  getProblemList(options: ProblemFilter): Promise<ProblemMeta[]>
+  getContestInfo(contestid: string): Promise<ContestInfo>
+  getProblemInfo(problemid: string): Promise<ProblemInfo>
   getRank(contestid: string): UserRank[]
   getCommit(userid: string, options: Pagination): Submit[]
-  whoami(): User
+  whoami(): User | null
+}
+
+export interface OnlineJudgerProvider extends OnlineJudger {
+  key: string
+}
+
+const onlineJudgerProviders = new Map<string, OnlineJudgerProvider>()
+
+export function registerOnlineJudgerProvider(provider: OnlineJudgerProvider) {
+  onlineJudgerProviders.set(provider.key, provider)
+}
+
+export type ListOnlineJudgerProviderResult = Map<string, string>
+
+export function listOnlineJudgerProvider() {
+  const t = new Map<string, string>()
+  onlineJudgerProviders.forEach((value, key) => {
+    t.set(key, value.name)
+  })
+  return t
+}
+
+export function getOnlineJudgerProvider(key: string) {
+  return onlineJudgerProviders.get(key)
 }
 
 export interface LanguageClient extends lsp.ProtocolConnection {

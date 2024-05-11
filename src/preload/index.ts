@@ -2,9 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 function makeipc(ipcname) {
-  return (...args) => {
+  return async (...args) => {
     console.log('invoke', ipcname, args)
-    return ipcRenderer.invoke(ipcname, ...args)
+    const reuslt = await ipcRenderer.invoke(ipcname, ...args)
+    console.log('invoke', ipcname, args, '=>', reuslt)
+    return reuslt
   }
 }
 
@@ -27,6 +29,13 @@ const api = {
     stdin: makeipc('term.stdin'),
     close: makeipc('term.close'),
     resize: makeipc('term.resize')
+  },
+  oj: {
+    list: makeipc('oj.list'),
+    login: makeipc('oj.login'),
+    getContestList: makeipc('oj.getContestList'),
+    getContestInfo: makeipc('oj.getContestInfo'),
+    getContestTags: makeipc('oj.getContestTags')
   },
   menu: {
     langChoose: makeipc('menu.langChoose')

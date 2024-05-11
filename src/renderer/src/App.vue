@@ -1,19 +1,22 @@
 <template>
-  <div class="hbox">
-    <div class="vbox">
-      <SideBar @toggle="toggleMainView" @sidebar-toggle="sidebarToggled" />
-      <KeepAlive>
-        <Editor :show="currentMainView == 'editor' || visibleEditor" ref="edtior" />
-      </KeepAlive>
-      <KeepAlive>
-        <Term ref="term" :show="currentMainView == 'term' && !visibleEditor" />
-      </KeepAlive>
+  <n-config-provider :theme="darkTheme">
+    <div class="hbox">
+      <div class="vbox">
+        <SideBar @toggle="toggleMainView" @sidebar-toggle="sidebarToggled" />
+        <KeepAlive>
+          <Editor ref="edtior" :show="currentMainView == 'editor' || visibleEditor" />
+        </KeepAlive>
+        <KeepAlive>
+          <Term ref="term" :show="currentMainView == 'term' && !visibleEditor" />
+        </KeepAlive>
+      </div>
+      <StatusBar ref="statusBar" />
     </div>
-    <StatusBar ref="statusBar" />
-  </div>
+  </n-config-provider>
 </template>
 
 <script setup lang="ts">
+import { darkTheme, NConfigProvider } from 'naive-ui'
 import { computed, inject, onMounted, ref } from 'vue'
 import * as appkey from './AppKey'
 import Term from './components/Term.vue'

@@ -1,3 +1,4 @@
+import type * as lib from './../lib/index'
 import { ElectronAPI } from '@electron-toolkit/preload'
 import { RendererLogger } from 'electron-log'
 import * as lsp from 'vscode-languageserver-protocol'
@@ -27,6 +28,16 @@ interface api {
   }
   menu: {
     langChoose: () => Promise<string>
+  }
+  oj: {
+    list: () => Promise<lib.ListOnlineJudgerProviderResult>
+    login: (key: string) => Promise<lib.User | null>
+    getContestList: (
+      key: string,
+      options: lib.ContestFilter
+    ) => Promise<lib.ContestMeta[] | undefined>
+    getContestInfo: (key: string, contestid: string) => Promise<lib.ContestInfo | undefined>
+    getContestTags: () => Promise<string[] | undefined>
   }
 }
 declare global {

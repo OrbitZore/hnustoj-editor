@@ -1,5 +1,4 @@
 import './assets/main.css'
-
 import { createApp, reactive, ref } from 'vue'
 import App from './App.vue'
 
@@ -15,5 +14,6 @@ app.provide(
 )
 app.provide(appkey.editorLanguage, ref('cpp'))
 app.provide(appkey.editorPath, ref('/tmp/test.cpp'))
+app.provide(appkey.onlineJudgerKey, ref(null))
 
 app.mount('#app')

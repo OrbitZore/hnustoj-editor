@@ -6,21 +6,27 @@ function uriToPath(uri: string) {
   return uri.slice(7)
 }
 
-import { onMounted, onBeforeUnmount, ref, watch, inject, nextTick } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch, inject, nextTick, reactive } from 'vue'
 import * as monaco from 'monaco-editor'
 import * as appkey from '../AppKey'
 import { editorProps } from './EditorType'
 import * as lsp from 'vscode-languageserver-protocol'
-import { IpcRendererEvent } from 'electron/renderer'
+import { IpcRendererEvent } from 'electron'
 import Queue from 'queue'
 const props = defineProps(editorProps)
 const emit = defineEmits(['change', 'editor-mounted'])
 const codeEditBox = ref<HTMLInputElement | null>()
 
-const editorInitText = inject(appkey.editorInitText)
-const position = inject(appkey.editorPositon)
-const editorpath = inject(appkey.editorPath)
-const editorlang = inject(appkey.editorLanguage)
+const editorInitText = inject(appkey.editorInitText, ref(''))
+const position = inject(
+  appkey.editorPositon,
+  reactive({
+    lineNumber: 0,
+    column: 0
+  })
+)
+const editorpath = inject(appkey.editorPath, ref('/tmp/test.cpp'))
+const editorlang = inject(appkey.editorLanguage, ref('cpp'))
 let editor: monaco.editor.IStandaloneCodeEditor
 const changeQueue = new Queue({ concurrency: 1, autostart: true })
 let loadingcnt = 0

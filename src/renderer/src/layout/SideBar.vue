@@ -17,11 +17,14 @@
         </div>
       </div>
     </div>
-    <template v-if="visible">
+    <div
+      v-show="visible"
+      style="overflow-y: auto; min-width: 300px; max-height: calc(100vh - 20px); padding: 0 3px"
+    >
       <KeepAlive>
         <component :is="tabs[currentTab]" class="tab"></component>
       </KeepAlive>
-    </template>
+    </div>
   </div>
 </template>
 
@@ -55,25 +58,23 @@ onMounted(() => {
 .sidepannel {
   background-color: #22252b;
   color: #d8dadf;
+  flex: 0 0 0;
 }
 </style>
 <style scoped>
-.sidepannel {
-  flex: 0;
-}
 .sidebar {
   display: flex;
-  flex: 0;
+  flex: 0 0 0;
   flex-direction: column;
   justify-content: flex-start;
   height: 100%;
   border-right: 1px solid #e0e0e0;
 }
 .sidebar-end {
-  flex: 0;
+  flex: 0 0 0;
 }
 .sidebar-button {
-  flex: 0;
+  flex: 0 0 0;
   cursor: pointer;
   background-color: transparent;
   border: none;
@@ -89,6 +90,6 @@ onMounted(() => {
   color: #6b6d73;
 }
 .tab {
-  width: 400px;
+  width: 300px;
 }
 </style>

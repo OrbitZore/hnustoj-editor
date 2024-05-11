@@ -1,0 +1,9 @@
+.navbar {
+  display: none;
+}
+.center {
+  display: none;
+}
+a[href="lostpassword.php"] {
+  display: none;
+}

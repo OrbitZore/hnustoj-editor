@@ -7,3 +7,4 @@ export const editorPositon = Symbol() as InjectionKey<{
 }>
 export const editorLanguage = Symbol() as InjectionKey<Ref<string>>
 export const editorPath = Symbol() as InjectionKey<Ref<string>>
+export const onlineJudgerKey = Symbol() as InjectionKey<Ref<string | null>>
