@@ -9,24 +9,23 @@ export interface User {
 export interface TestCase {
   _in: string
   ans: string
-  judger: (_in: string, out: string, ans: string) => number
+}
+
+export interface ContestProblem {
+  contestID: string
+  contestProblemID: string
 }
 
 export interface ProblemMeta {
   creator: string
   problemid: string
+  contestProblem?: ContestProblem
   problemName: string
-  contestInfo?: {
-    contestid: string
-    contestProblemid: string
-    ac: number
-    submit: number
-  }
 }
 
 export interface ProblemInfo extends ProblemMeta {
   discribe: string
-  tests: TestCase
+  tests: TestCase[]
   ac: number
   submit: number
   status: JudgeResult

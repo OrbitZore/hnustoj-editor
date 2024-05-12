@@ -22,7 +22,7 @@ class eventQueue extends Queue {
   }
 }
 
-ipcMain.on('hnustoj:sendAccount', (e, user: Account) => {
+ipcMain.on('hnustoj:sendAccount', (_e, user: Account) => {
   localStorage.safeSetItem('hnustoj:username', user.username)
   localStorage.safeSetItem('hnustoj:password', user.password)
 })
@@ -81,7 +81,7 @@ const createHNUSTOJ = () =>
             this.inlineBrowser.webContents.off('will-navigate', WhenNavigate)
             hnustojLog.log('login success')
             this.whoami().then((v) => {
-              // this.inlineBrowser.hide()
+              this.inlineBrowser.hide()
               resolv(v)
             })
           }
@@ -109,15 +109,21 @@ const createHNUSTOJ = () =>
       })
     },
     async getContestList(options: hal.ContestFilter) {
-      await this.inlineBrowser.loadURL(HNUSTURL.contestPage(options.pageination.page))
+      await this.inlineBrowser.loadURL(HNUSTURL.myImpartPage(options.pageination?.page))
       const search: string[] = []
       if (options.name) search.push(options.name)
       if (options.tags?.length) search.push(...options.tags)
-      if (search.length) {
-        const searchString = search.join(' ')
+      const searchString = search.join(' ').trim()
+      const waitloaded = new Promise<void>((resolve) => {
+        this.inlineBrowser.webContents.once('did-finish-load', () => {
+          resolve()
+        })
+      })
+      if (searchString) {
         await this.inlineBrowser.webContents.executeJavaScript(
           `document.forms[0]['keyword'].value="${searchString}";document.forms[0].submit();`
         )
+        await waitloaded
       }
       return new Promise<hal.ContestMeta[]>((resolv) => {
         ipcMain.once(
@@ -141,19 +147,22 @@ const createHNUSTOJ = () =>
     },
     async getProblemTags() {
       await this.inlineBrowser.loadURL(HNUSTURL.problemTagPage)
-      return new Promise<string[]>((resolv) => {
+      return new Promise((resolv) => {
         ipcMain.once('hnustoj:sendProblemTags', async (_e, problemTags: string[]) => {
           resolv(problemTags)
         })
         this.inlineBrowser.webContents.executeJavaScript(`window.api.sendProblemTags();`)
       })
+    },
+    async getProblemInfo(problemid: string) {
+      await this.inlineBrowser.loadURL(HNUSTURL.problemInfoPage(problemid))
+      return new Promise((resolv) => {
+        ipcMain.once('hnustoj:sendProblemInfo', async (_e, problem: hal.ProblemInfo) => {
+          resolv(problem)
+        })
+        this.inlineBrowser.webContents.executeJavaScript(`window.api.sendProblemInfo();`)
+      })
     }
-    // getContestList(options: ContestFilter): ContestList
-    // getProblemList(options: ProblemFilter): ProblemList
-    // getProblemFromContest(contestid: string): ProblemList
-    // getRank(contestid: string): UserRank[]
-    // getCommit(userid: string, options: Pagination): Submit[]
-    // whoami(): User
   })
 app.whenReady().then(() => {
   const hnustoj = createHNUSTOJ()

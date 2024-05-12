@@ -17,19 +17,19 @@
         </div>
       </div>
     </div>
-    <div
-      v-show="visible"
-      style="overflow-y: auto; min-width: 300px; max-height: calc(100vh - 20px); padding: 0 3px"
+    <n-scrollbar
+      style="overflow-y: auto; min-width: 300px; height: calc(100vh - 20px); padding: 0 3px"
     >
       <KeepAlive>
-        <component :is="tabs[currentTab]" class="tab"></component>
+        <component :is="tabs[currentTab]" v-show="visible" class="tab"></component>
       </KeepAlive>
-    </div>
+    </n-scrollbar>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref, defineEmits } from 'vue'
+import { NScrollbar } from 'naive-ui'
 import { tabs } from '../components/sidebarComponents'
 const currentTab = ref('OJManager')
 const visible = ref(true)

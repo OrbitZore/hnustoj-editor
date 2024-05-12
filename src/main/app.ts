@@ -17,7 +17,7 @@ function createWindow(): void {
       sandbox: false
     }
   })
-  mainWindow.webContents.openDevTools()
+  // mainWindow.webContents.openDevTools()
   mainWindow.setMenu(createMainMenu(mainWindow))
   mainWindow.on('ready-to-show', () => {
     mainWindow.show()

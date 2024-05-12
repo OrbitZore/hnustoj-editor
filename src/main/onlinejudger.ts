@@ -11,7 +11,7 @@ class OnlineJudger {
     if (account) return account
     return provider.login()
   }
-  async getContestTags(_event: IpcMainInvokeEvent) {
+  async getContestTags(_event: IpcMainInvokeEvent, key: string) {
     const provider = hal.getOnlineJudgerProvider(key)
     if (!provider) return
     return provider.getContestTags()
@@ -26,6 +26,11 @@ class OnlineJudger {
     if (!provider) return
     return provider.getContestInfo(contestid)
   }
+  async getProblemInfo(_event: IpcMainInvokeEvent, key: string, problemid: string) {
+    const provider = hal.getOnlineJudgerProvider(key)
+    if (!provider) return
+    return provider.getProblemInfo(problemid)
+  }
 }
 
 const oj = new OnlineJudger()
@@ -33,5 +38,6 @@ ipcMain.handle('oj.list', oj.listOnlineJudgerProvider.bind(oj))
 ipcMain.handle('oj.getContestList', oj.getContestList.bind(oj))
 ipcMain.handle('oj.getContestInfo', oj.getContestInfo.bind(oj))
 ipcMain.handle('oj.getContestTags', oj.getContestTags.bind(oj))
+ipcMain.handle('oj.getProblemInfo', oj.getProblemInfo.bind(oj))
 ipcMain.handle('oj.login', oj.login.bind(oj))
 export default oj

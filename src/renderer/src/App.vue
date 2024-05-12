@@ -1,5 +1,5 @@
 <template>
-  <n-config-provider :theme="darkTheme">
+  <n-config-provider style="overflow: hidden" :theme="darkTheme">
     <div class="hbox">
       <div class="vbox">
         <SideBar @toggle="toggleMainView" @sidebar-toggle="sidebarToggled" />

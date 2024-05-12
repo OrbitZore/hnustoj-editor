@@ -112,6 +112,16 @@ const api = {
       }))
     }
     electron.ipcRenderer.send('hnustoj:sendContestInfo', ret)
+  },
+  sendProblemInfo() {
+    const sampleInput = document.getElementById('sampleinput')?.innerText || ''
+    const sampleOutput = document.getElementById('sampleoutput')?.innerText || ''
+    electron.ipcRenderer.send('hnustoj:sendProblemInfo', {
+      tests: {
+        _in: sampleInput,
+        ans: sampleOutput
+      }
+    })
   }
 }
 // Use `contextBridge` APIs to expose Electron APIs to

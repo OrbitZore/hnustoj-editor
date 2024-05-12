@@ -1,27 +1,54 @@
 <template>
-  <n-infinite-scroll style="width: 400px" :distance="10" @load="loadContest">
-    <n-menu :options="menuOptions" />
-  </n-infinite-scroll>
+  <n-flex vertical>
+    <n-input
+      v-model:value="searchString"
+      size="large"
+      round
+      placeholder="搜索"
+      :allow-input="noSideSpace"
+    />
+    <n-spin :show="!!loading">
+      <n-infinite-scroll :distance="10" @load="loadContest">
+        <n-menu @update="clickedMenu" :options="menuOptions" />
+      </n-infinite-scroll>
+    </n-spin>
+  </n-flex>
 </template>
 
 <script setup lang="ts">
 import { watch, ref, inject, onMounted, Component, h, reactive } from 'vue'
 import * as appkey from '../../AppKey'
-import { NInfiniteScroll, NMenu, MenuOption, NIcon, NEllipsis } from 'naive-ui'
+import {
+  NInfiniteScroll,
+  NMenu,
+  MenuOption,
+  NIcon,
+  NEllipsis,
+  NSpin,
+  NFlex,
+  NInput
+} from 'naive-ui'
 import { Book2 } from '@vicons/tabler'
 function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
+const searchString = ref('')
+const loading = ref(0)
 const menuOptions: MenuOption[] = reactive([])
 const contestPage = ref(1)
 const onlineJudger = inject(appkey.onlineJudgerKey)!
+const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
 const loadContest = async () => {
   if (!onlineJudger || !onlineJudger.value) return
+  loading.value++
   const oj = onlineJudger.value
   const result = await window.api.oj.getContestList(oj, {
-    pageination: {
-      page: contestPage.value
-    }
+    name: searchString.value,
+    pageination: !searchString.value
+      ? {
+          page: contestPage.value
+        }
+      : undefined
   })
   if (result && result.length) {
     const contestinfos = (
@@ -31,7 +58,7 @@ const loadContest = async () => {
         })
       )
     ).filter(<T,>(it: T): it is NonNullable<T> => !!it)
-    console.log(contestinfos)
+    if (searchString.value) menuOptions.length = 0
     menuOptions.push(
       ...contestinfos.map((contestinfo) => ({
         label: () => h(NEllipsis, null, { default: () => contestinfo.contestName }),
@@ -44,18 +71,28 @@ const loadContest = async () => {
           })) || []
       }))
     )
-    console.log(menuOptions)
     contestPage.value++
+  }
+  loading.value--
+}
+const emit = defineEmits(['openProblem'])
+function clickedMenu(key: string) {
+  if (key.startsWith('p')) {
+    emit('openProblem', key.slice(1))
   }
 }
 onMounted(() => {
+  watch(onlineJudger!, async () => {
+    menuOptions.length = 0
+    contestPage.value = 1
+    searchString.value = ''
+  })
   watch(
-    onlineJudger!,
-    async (newValue, oldValue) => {
-      if (newValue === oldValue) return
+    searchString,
+    async () => {
       menuOptions.length = 0
       contestPage.value = 1
-      if (newValue) loadContest()
+      loadContest()
     },
     { immediate: true }
   )

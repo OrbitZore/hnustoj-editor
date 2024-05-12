@@ -38,6 +38,7 @@ interface api {
     ) => Promise<lib.ContestMeta[] | undefined>
     getContestInfo: (key: string, contestid: string) => Promise<lib.ContestInfo | undefined>
     getContestTags: () => Promise<string[] | undefined>
+    getProblemInfo: (key: string, problemid: string) => Promise<lib.ProblemInfo | undefined>
   }
 }
 declare global {
