@@ -1,4 +1,4 @@
-import * as lsp from 'vscode-languageserver-protocol'
+import * as hal from 'vscode-languageserver-protocol'
 import type * as monaco from 'monaco-editor'
 export interface User {
   userid: string
@@ -139,14 +139,14 @@ export function getOnlineJudgerProvider(key: string) {
   return onlineJudgerProviders.get(key)
 }
 
-export interface LanguageClient extends lsp.ProtocolConnection {
-  initialize(): Promise<lsp.InitializeResult<unknown>>
+export interface LanguageClient extends hal.ProtocolConnection {
+  initialize(): Promise<hal.InitializeResult<unknown>>
   initialized(): Promise<void>
   open(uri: string, languageId: string, text: string): Promise<void>
   close(uri: string): Promise<void>
   didChange(uri: string, changes: monaco.editor.IModelContentChangedEvent): Promise<void>
   onPublishDiagnostics(
-    publishDiagnosticsHandler: (publishDiagnostics: lsp.PublishDiagnosticsParams) => void
+    publishDiagnosticsHandler: (publishDiagnostics: hal.PublishDiagnosticsParams) => void
   ): void
   requestCompletion(
     uri: string,
@@ -183,18 +183,18 @@ export interface RunResult {
 
 export interface LanguageProvider extends LanguageClient {
   languageSupported: LanguageSupported[]
-  initializeResult: lsp.InitializeResult<unknown>
+  initializeResult: hal.InitializeResult<unknown>
   compile(filename: string, execCmd?: string): Promise<CompilerResult>
   run(filename: string, execArgs?: string, options?: RunOptions): Promise<RunResult>
 }
 
 export interface LanguageServerEventHandler {
-  onPublishDiagnostics(publishDiagnostics: lsp.PublishDiagnosticsParams): void
+  onPublishDiagnostics(publishDiagnostics: hal.PublishDiagnosticsParams): void
 }
 
 let languageServerEventHandler = {
   // eslint-disable-next-line @typescript-eslint/no-empty-function, @typescript-eslint/no-unused-vars
-  onPublishDiagnostics(_publishDiagnostics: lsp.PublishDiagnosticsParams) {}
+  onPublishDiagnostics(_publishDiagnostics: hal.PublishDiagnosticsParams) {}
 }
 
 const languageProvider = new Map<string, LanguageProvider>()

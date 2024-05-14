@@ -23,6 +23,7 @@ import Term from './components/Term.vue'
 import Editor from './components/Editor.vue'
 import StatusBar from './layout/StatusBar.vue'
 import SideBar from './layout/SideBar.vue'
+import eventBus from '@lib/eventBus'
 const statusBar = ref<InstanceType<typeof StatusBar>>()
 const term = ref<InstanceType<typeof Term>>()
 const position = inject(appkey.editorPositon)
@@ -41,6 +42,16 @@ function sidebarToggled() {
   term.value?.resize()
   console.log('resizede')
 }
+
+eventBus.on('toTerminal', () => {
+  currentMainView.value = 'term'
+  visibleEditor.value = false
+})
+
+eventBus.on('toEditor', () => {
+  currentMainView.value = 'editor'
+  visibleEditor.value = true
+})
 onMounted(() => {
   if (statusBar.value) {
     statusBar.value.leftRegist({

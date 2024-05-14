@@ -3,7 +3,7 @@ import type * as monaco from 'monaco-editor'
 import { IpcMainInvokeEvent, ipcMain } from 'electron'
 import * as fs from 'fs/promises'
 export type LanguageSupportedKey = 'cpp'
-import * as hel from '@lib'
+import * as hal from '@lib'
 import log from 'electron-log/main.js'
 const lspClientLog = log.scope('LSPClient')
 function pathToURI(path: string) {
@@ -25,7 +25,7 @@ class LSPClient {
   async open(_event: IpcMainInvokeEvent, path: string, languagekey: string) {
     lspClientLog.log('open', path, languagekey, _event)
     const uri = pathToURI(path)
-    const ls = hel.getLanguageProvider(languagekey)
+    const ls = hal.getLanguageProvider(languagekey)
     if (!ls) return
     this.fileMeta.set(path, { languagekey, sender: _event.sender })
     const fd = await fs.open(path, 'a+')
@@ -37,7 +37,7 @@ class LSPClient {
   async close(_event: IpcMainInvokeEvent, path: string) {
     const filemeta = this.fileMeta.get(path)
     if (!filemeta) return
-    const ls = hel.getLanguageProvider(filemeta.languagekey)
+    const ls = hal.getLanguageProvider(filemeta.languagekey)
     const uri = pathToURI(path)
     this.fileMeta.delete(path)
     return ls?.close(uri)
@@ -51,9 +51,9 @@ class LSPClient {
     const uri = pathToURI(path)
     const filemeta = this.fileMeta.get(path)
     if (!filemeta) return
-    const oldls = hel.getLanguageProvider(filemeta.languagekey)
+    const oldls = hal.getLanguageProvider(filemeta.languagekey)
     await oldls?.close(pathToURI(path))
-    const newls = hel.getLanguageProvider(languagekey)
+    const newls = hal.getLanguageProvider(languagekey)
     await newls?.open(uri, languagekey, await fs.readFile(path, 'utf8'))
     this.fileMeta.set(path, { languagekey, sender: _event.sender })
   }
@@ -64,7 +64,7 @@ class LSPClient {
   ) {
     const filemeta = this.fileMeta.get(path)
     if (!filemeta) return
-    const ls = hel.getLanguageProvider(filemeta.languagekey)
+    const ls = hal.getLanguageProvider(filemeta.languagekey)
     const uri = pathToURI(path)
     await ls?.didChange(uri, changeEvent)
   }
@@ -74,7 +74,7 @@ class LSPClient {
     sender.send('PublishDiagnostics', publishDiagnostics)
   }
   getInitializeResult(_event: IpcMainInvokeEvent, lang: string) {
-    const provider = hel.getLanguageProvider(lang)
+    const provider = hal.getLanguageProvider(lang)
     return provider?.initializeResult
   }
   async requestCompletion(
@@ -86,7 +86,7 @@ class LSPClient {
     triggerCharacter?: string
   ): Promise<monaco.languages.CompletionList> {
     const filemeta = this.fileMeta.get(path)
-    const ls = hel.getLanguageProvider(filemeta?.languagekey)
+    const ls = hal.getLanguageProvider(filemeta?.languagekey)
     return (
       (await ls?.requestCompletion(
         pathToURI(path),
@@ -99,9 +99,24 @@ class LSPClient {
       }
     )
   }
+  async compile(_event: IpcMainInvokeEvent, filename: string, execCmd?: string) {
+    const filemeta = this.fileMeta.get(filename)
+    const ls = hal.getLanguageProvider(filemeta?.languagekey)
+    return ls?.compile(filename, execCmd)
+  }
+  async run(
+    _event: IpcMainInvokeEvent,
+    filename: string,
+    execArgs?: string,
+    options?: hal.RunOptions
+  ) {
+    const filemeta = this.fileMeta.get(filename)
+    const ls = hal.getLanguageProvider(filemeta?.languagekey)
+    return ls?.run(filename, execArgs, options)
+  }
 }
 const lsc = new LSPClient()
-hel.setLanguageServerEventHandler(lsc)
+hal.setLanguageServerEventHandler(lsc)
 ipcMain.handle('lsp.change', lsc.change.bind(lsc))
 ipcMain.handle('lsp.open', lsc.open.bind(lsc))
 ipcMain.handle('lsp.changeLanguage', lsc.changeLanguage.bind(lsc))
@@ -109,4 +124,6 @@ ipcMain.handle('lsp.close', lsc.close.bind(lsc))
 ipcMain.handle('lsp.save', lsc.save.bind(lsc))
 ipcMain.handle('lsp.requestCompletion', lsc.requestCompletion.bind(lsc))
 ipcMain.handle('lsp.getInitializeResult', lsc.getInitializeResult.bind(lsc))
+ipcMain.handle('lsp.compile', lsc.compile.bind(lsc))
+ipcMain.handle('lsp.run', lsc.run.bind(lsc))
 export default lsc

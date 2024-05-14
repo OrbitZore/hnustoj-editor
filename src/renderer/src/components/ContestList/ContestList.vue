@@ -9,7 +9,7 @@
     />
     <n-spin :show="!!loading">
       <n-infinite-scroll :distance="10" @load="loadContest">
-        <n-menu @update="clickedMenu" :options="menuOptions" />
+        <n-menu :options="menuOptions" @update-value="clickedMenu" />
       </n-infinite-scroll>
     </n-spin>
   </n-flex>
@@ -29,6 +29,7 @@ import {
   NInput
 } from 'naive-ui'
 import { Book2 } from '@vicons/tabler'
+import eventBus from '@lib/eventBus'
 function renderIcon(icon: Component) {
   return () => h(NIcon, null, { default: () => h(icon) })
 }
@@ -75,18 +76,21 @@ const loadContest = async () => {
   }
   loading.value--
 }
-const emit = defineEmits(['openProblem'])
 function clickedMenu(key: string) {
-  if (key.startsWith('p')) {
-    emit('openProblem', key.slice(1))
+  console.info('clicked:', key)
+  if (key && key.startsWith('p')) {
+    eventBus.emit('openProblem', key.slice(1))
   }
 }
-onMounted(() => {
-  watch(onlineJudger!, async () => {
+eventBus.on('ojChanged', () => {
+  if (onlineJudger.value) {
     menuOptions.length = 0
     contestPage.value = 1
     searchString.value = ''
-  })
+    loadContest()
+  }
+})
+onMounted(() => {
   watch(
     searchString,
     async () => {

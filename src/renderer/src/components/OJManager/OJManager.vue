@@ -24,8 +24,10 @@ import { inject, onMounted, ref, watch } from 'vue'
 import { User } from '@vicons/fa'
 import * as appkey from '../../AppKey'
 import { SelectOption, NSelect, NResult, NIcon, NSpin, NFlex } from 'naive-ui'
+import eventBus from '@lib/eventBus'
 
-const selectedValue = inject(appkey.onlineJudgerKey)!
+const selectedValue = ref('')
+const onlineJudger = inject(appkey.onlineJudgerKey)!
 const loading = ref(false)
 const userid = ref('')
 const username = ref('')
@@ -40,16 +42,19 @@ onMounted(async () => {
       value: k
     })
   })
-  watch(selectedValue!, async (newValue, oldValue) => {
-    if (oldValue && oldValue === newValue) return
+  watch(selectedValue, async (newValue, oldValue) => {
+    if (oldValue === newValue) return
     loading.value = true
     const account = await window.api.oj.login(newValue!)
     if (account) {
       userid.value = account.userid
       username.value = account.username
+      onlineJudger.value = newValue
+      eventBus.emit('ojChanged')
     } else {
       userid.value = '登陆失败'
       username.value = ''
+      selectedValue.value = ''
     }
     loading.value = false
     console.log(userid.value)

@@ -8,8 +8,11 @@
   ],
   "compilerOptions": {
     "composite": true,
+    "target": "ESNext",
+    "module": "ESNext",
     "baseUrl": ".",
     "paths": {
+      "@lib/*": ["src/renderer/src/lib/*"],
       "@renderer/*": [
         "src/renderer/src/*"
       ]

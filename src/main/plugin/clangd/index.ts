@@ -17,9 +17,10 @@ const createClangd = () => ({
   initializeResult: undefined as unknown as lsp.InitializeResult<unknown>,
   async compile(filename: string, execCmd?: string) {
     if (!execCmd) execCmd = appconf.LanguageProvicer.cpp.compileCommand
+    const outfilename = filename + '.out'
     return new Promise<hal.CompilerResult>((resolve) => {
       exec(
-        `${execCmd} -o "${filename}".out "${filename}"`,
+        `${execCmd} -o "${outfilename}" "${filename}"`,
         {
           maxBuffer: appconf.CompilerOutputLimit
         },
@@ -29,7 +30,7 @@ const createClangd = () => ({
           resolve({
             code: error?.code || 0,
             stdout: stdout,
-            outfilename: filename + '.out'
+            outfilename
           })
         }
       )

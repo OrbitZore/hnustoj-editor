@@ -17,13 +17,18 @@
         </div>
       </div>
     </div>
-    <n-scrollbar
+    <div
+      v-show="visible"
       style="overflow-y: auto; min-width: 300px; height: calc(100vh - 20px); padding: 0 3px"
     >
-      <KeepAlive>
-        <component :is="tabs[currentTab]" v-show="visible" class="tab"></component>
-      </KeepAlive>
-    </n-scrollbar>
+      <n-scrollbar>
+        <KeepAlive>
+          <template v-for="(_, tab) in tabs" :key="tab">
+            <component :is="tabs[tab]" v-show="tab == currentTab" class="tab"></component>
+          </template>
+        </KeepAlive>
+      </n-scrollbar>
+    </div>
   </div>
 </template>
 
@@ -31,6 +36,7 @@
 import { onMounted, ref, defineEmits } from 'vue'
 import { NScrollbar } from 'naive-ui'
 import { tabs } from '../components/sidebarComponents'
+import eventBus from '@lib/eventBus'
 const currentTab = ref('OJManager')
 const visible = ref(true)
 const emit = defineEmits(['toggle', 'sidebar-toggle'])
@@ -47,6 +53,16 @@ function clicked(tab) {
   }
   emit('sidebar-toggle')
 }
+eventBus.on('hideSidebar', () => {
+  visible.value = false
+})
+eventBus.on('showSidebar', () => {
+  visible.value = true
+})
+eventBus.on('showSiderbarComponent', (tab) => {
+  currentTab.value = tab
+  visible.value = true
+})
 onMounted(() => {
   window.electron.ipcRenderer.on('menu:toggleSidebar', () => {
     visible.value = !visible.value

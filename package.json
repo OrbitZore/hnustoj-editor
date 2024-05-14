@@ -38,6 +38,7 @@
     "electron-log": "^5.1.2",
     "electron-updater": "^6.1.8",
     "json5": "^2.2.3",
+    "mitt": "^3.0.1",
     "monaco-editor": "^0.46.0",
     "node-gyp": "^10.1.0",
     "node-pty": "^1.0.0",

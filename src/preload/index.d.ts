@@ -19,6 +19,12 @@ interface api {
       triggerKind: number,
       triggerCharacter?: string
     ): Promise<monaco.languages.CompletionList>
+    compile: (filename: string, execCmd?: string) => Promise<lib.CompilerResult | undefined>
+    run: (
+      filename: string,
+      execArgs?: string,
+      options?: lib.RunOptions
+    ) => Promise<lib.RunResult | undefined>
   }
   term: {
     open: () => Promise<number>

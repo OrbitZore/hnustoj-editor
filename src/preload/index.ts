@@ -37,7 +37,9 @@ const api = {
     getContestInfo: makeipc('oj.getContestInfo'),
     getContestTags: makeipc('oj.getContestTags'),
     getProblemInfo: makeipc('oj.getProblemInfo'),
-    compileAndRun: makeipc('oj.compileAndRun')
+    compileAndRun: makeipc('oj.compileAndRun'),
+    compile: makeipc('lsp.compile'),
+    run: makeipc('lsp.run')
   },
   menu: {
     langChoose: makeipc('menu.langChoose')

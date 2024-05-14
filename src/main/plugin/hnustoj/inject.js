@@ -117,10 +117,12 @@ const api = {
     const sampleInput = document.getElementById('sampleinput')?.innerText || ''
     const sampleOutput = document.getElementById('sampleoutput')?.innerText || ''
     electron.ipcRenderer.send('hnustoj:sendProblemInfo', {
-      tests: {
-        _in: sampleInput,
-        ans: sampleOutput
-      }
+      tests: [
+        {
+          _in: sampleInput,
+          ans: sampleOutput
+        }
+      ]
     })
   }
 }

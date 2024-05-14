@@ -7,6 +7,7 @@ import * as HNUSTURL from './hnustURL'
 import { localStorage } from '@lib/storage'
 import Queue from 'queue'
 import { make_queue } from '@lib/queueWrapper'
+import { is } from '@electron-toolkit/utils'
 
 const hnustojLog = log.scope('hustoj')
 class Account {
@@ -81,7 +82,9 @@ const createHNUSTOJ = () =>
             this.inlineBrowser.webContents.off('will-navigate', WhenNavigate)
             hnustojLog.log('login success')
             this.whoami().then((v) => {
-              this.inlineBrowser.hide()
+              if (!is.dev) {
+                this.inlineBrowser.hide()
+              }
               resolv(v)
             })
           }
